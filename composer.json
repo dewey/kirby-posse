@@ -14,16 +14,9 @@
         "getkirby/composer-installer": "^1.1",
         "cjrasmussen/bluesky-api": "^2.3"
     },
-    "require-dev": {
-        "phpstan/phpstan": "^1.10"
-    },
-    "scripts": {
-        "analyze": "phpstan analyse"
-    },
     "extra": {
         "installer-name": "posse"
     },
-    "minimum-stability": "stable",
     "config": {
         "allow-plugins": {
             "getkirby/composer-installer": true
