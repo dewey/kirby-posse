@@ -1,0 +1,10 @@
+parameters:
+    level: 5
+    paths:
+        - src
+    ignoreErrors:
+        - '#Variable \$kirby might not be defined#'
+        - '#Variable \$page might not be defined#'
+        - '#Variable \$site might not be defined#'
+        - '#Cannot access property \$content on array\|Kirby\\Cms\\Field#'
+    reportUnmatchedIgnoredErrors: false
