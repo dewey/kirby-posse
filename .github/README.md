@@ -1,6 +1,6 @@
 # POSSE Plugin for Kirby
 
-![Overview](./.github/Overview.png)
+![Overview](./Overview.png)
 
 This plugin enables Publish (on your) Own Site, Syndicate Elsewhere (POSSE) functionality for your Kirby site. Automatically syndicate your posts to Mastodon and Bluesky (For now), or manually decide which ones you want to syndicate.
 
