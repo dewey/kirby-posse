@@ -1,0 +1,30 @@
+@tailwind components;
+@tailwind utilities;
+
+/* Base plugin styles */
+.posse-view {
+  padding: 1.5rem;
+}
+
+.posse-view h1 {
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.posse-view p {
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+
+/* Panel link styling */
+.posse-panel-link {
+  color: var(--color-gray-500) !important;
+  font-size: 0.9em;
+  transition: color 0.2s ease-in-out;
+}
+
+.posse-panel-link:hover {
+  color: var(--color-focus) !important;
+  text-decoration: underline;
+}
