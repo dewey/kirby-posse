@@ -20,11 +20,11 @@ return [
                     $posse = new Posse();
                     
                     // First get pending queue items (non-syndicated and non-ignored)
-                    $options = get();
+                    $options = kirby()->request()->get();
                     $pendingItems = $posse->getQueue($options);
                     
                     // Then get syndicated or ignored items for the history table (set syndicated=true)
-                    $historyOptions = array_merge(get(), ['syndicated' => true]);
+                    $historyOptions = array_merge(kirby()->request()->get(), ['syndicated' => true]);
                     $syndicatedItems = $posse->getQueue($historyOptions);
                     
                     // Combine both result sets
