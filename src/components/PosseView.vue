@@ -26,6 +26,7 @@
             @toggle-ignored="toggleIgnored"
             @add-to-queue="openAddDialog"
             @syndicate-now="syndicateNow"
+            @go-to-settings="siteSettings"
           />
 
           <!-- History Table -->

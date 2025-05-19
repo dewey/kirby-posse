@@ -171,10 +171,9 @@
         <!-- No Posts Error State -->
         <div v-else-if="!error && !postsLoading && posts.length === 0" class="k-empty">
           <p class="posse-empty-description">
-            Check that your content is structured correctly with post entries in 
-            <code>/content/1_posts</code>
-            and photo entries in 
-            <code>/content/2_photos</code>.
+            No content types configured. Please go to 
+            <a href="#" class="posse-action-link" @click.prevent="$emit('go-to-settings')">settings</a> 
+            and configure the content types you want to track.
           </p>
         </div>
         

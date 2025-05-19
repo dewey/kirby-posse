@@ -205,6 +205,11 @@ return [
                     $allListedPages = site()->index()->listed();
                     
                     // Process each content type from config
+                    // If no content types are configured, return empty array early
+                    if (empty($contentTypes)) {
+                        return [];
+                    }
+                    
                     foreach ($contentTypes as $templateName => $enabled) {
                         // Skip disabled content types
                         if (!$enabled) {

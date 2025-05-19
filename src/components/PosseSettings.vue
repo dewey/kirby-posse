@@ -40,7 +40,7 @@ export default {
     return {
       loading: true,
       formData: {
-        contenttypes: 'post, photo',
+        contenttypes: '',
         syndication_delay: 60,
         template: '{{title}}\n\n{{url}}\n\n{{tags}}',
         mastodon_enabled: false,
@@ -64,7 +64,7 @@ export default {
         contenttypes: {
           label: 'Content Types to Track',
           type: 'text',
-          help: 'Comma-separated list of page templates to track (e.g., "post, photo")',
+          help: 'Comma-separated list of page templates to track (e.g., "post, photo"). Leave empty to configure later.',
           width: '1/3'
         },
         syndication_delay: {
@@ -395,7 +395,7 @@ export default {
     
     // Helper to map content types object to comma-separated string
     mapContentTypes(contentTypesObj) {
-      if (!contentTypesObj) return 'post, photo';
+      if (!contentTypesObj || Object.keys(contentTypesObj).length === 0) return '';
       
       const enabledTypes = [];
       for (const [type, enabled] of Object.entries(contentTypesObj)) {
@@ -411,9 +411,9 @@ export default {
     parseContentTypes(contentTypesStr) {
       const result = {};
       
-      // Default to post and photo if empty
+      // If no content types provided, return empty object
       if (!contentTypesStr) {
-        return { post: true, photo: true };
+        return {};
       }
       
       // Split by comma and trim whitespace
