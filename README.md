@@ -6,9 +6,9 @@ This plugin enables Publish (on your) Own Site, Syndicate Elsewhere (POSSE) func
 
 - Automatically syndicates your posts to Mastodon and Bluesky
 - Customizable post template with support for title, URL and tags
-- Queue system for managing which posts get syndicated when
-- Configurable delay before syndication (To fix typos, etc.)
-- Support for syndication image limits (Up to 4 images)
+- Queue system for managing which posts get syndicated
+- Configurable delay before syndication (To fix typos)
+- Support for syndication image limits (Up to 4 images, settings to reuse your thumbnail size presets)
 - Automated cron job endpoint for scheduled syndication
 - SQLite database for storing syndication history and queue
 
@@ -47,6 +47,10 @@ template: |
   {{url}}
 
   {{tags}}
+
+# Image settings
+use_original_image_size: false  # Set to true to use original image sizes
+image_preset: '1800w'  # Preset to use for image resizing (e.g., '900w', '1800w', 'square-900w')
 
 services:
   mastodon:
