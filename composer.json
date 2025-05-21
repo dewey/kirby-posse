@@ -4,10 +4,12 @@
     "type": "kirby-plugin",
     "version": "1.0.0",
     "license": "MIT",
+    "homepage": "https://github.com/dewey/kirby-posse",
     "authors": [
         {
             "name": "Philipp Defner",
-            "email": "mail@notmyhostna.me"
+            "email": "mail@notmyhostna.me",
+            "homepage": "https://notmyhostna.me"
         }
     ],
     "require": {
