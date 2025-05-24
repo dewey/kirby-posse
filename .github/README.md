@@ -19,6 +19,8 @@ This plugin enables Publish (on your) Own Site, Syndicate Elsewhere (POSSE) func
 1. Download or clone this repository to `/site/plugins/posse`
 2. Configure the plugin through the Panel at "POSSE > Settings"
 
+Optional: Add `/site/db/posse.sqlite` and `/site/config/posse.yml` to `.gitignore` for git-based deployment strategies.
+
 ## Configuration
 
 Everything related to the plugin can be configured through the Kirby Panel. The automated syndication feature requires Basic Auth to be enabled in your config.php:
