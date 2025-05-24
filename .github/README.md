@@ -19,7 +19,7 @@ This plugin enables Publish (on your) Own Site, Syndicate Elsewhere (POSSE) func
 1. Download or clone this repository to `/site/plugins/posse`
 2. Configure the plugin through the Panel at "POSSE > Settings"
 
-Optiojnal: Add `/site/db/posse.sqlite` and `/site/config/posse.yml` to `.gitignore` for git-based deployment strategies.
+Optional: Add `/site/db/posse.sqlite` and `/site/config/posse.yml` to `.gitignore` for git-based deployment strategies.
 
 ## Configuration
 
