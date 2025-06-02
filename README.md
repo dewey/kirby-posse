@@ -14,8 +14,24 @@ This plugin enables Publish (on your) Own Site, Syndicate Elsewhere (POSSE) func
 
 ## Installation
 
+### Method 1: Composer (Recommended)
+
+```bash
+composer require notmyhostname/posse
+```
+
+### Method 2: Manual Installation
+
 1. Download or clone this repository to `/site/plugins/posse`
 2. Configure the plugin through the Panel at "POSSE > Settings"
+
+### Method 3: Git Submodule
+
+```bash
+git submodule add https://github.com/dewey/kirby-posse.git site/plugins/posse
+```
+
+After installation, configure the plugin through the Panel at "POSSE > Settings"
 
 ## Configuration
 
