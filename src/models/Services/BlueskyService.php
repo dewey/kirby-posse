@@ -56,7 +56,6 @@ class BlueskyService extends AbstractService
             $handle = trim($handle);
             $password = trim($password);
             
-            
             // Create a new BlueskyApi instance and authenticate
             try {
                 // Get Bluesky host from the instance URL
@@ -81,85 +80,44 @@ class BlueskyService extends AbstractService
                 ];
             }
             
-            // Sanitize content - remove special characters that could cause issues
-            $content = preg_replace('/[\x00-\x1F\x7F]/', '', $content);
+            // Process content and extract facets
+            $content = $this->sanitizeContent($content);
             
-            // Format content specifically for Bluesky with proper newlines
-            $blueskyContent = $this->formatContentForBluesky($page, $content);
+            // Extract URL facets
+            $urlFacets = $this->extractUrlFacets($content);
             
-            // Create a new post with text and images
+            // Extract hashtag facets
+            $hashtagFacets = $this->extractHashtagFacets($content);
+            
+            // Combine all facets
+            $facets = array_merge($urlFacets, $hashtagFacets);
+            
+            // Create base record
             $record = [
                 '$type' => 'app.bsky.feed.post',
-                'text' => $blueskyContent, // Content with properly formatted newlines
+                'text' => $content,
                 'createdAt' => date('c')
             ];
             
-            // Get image limit from service config
-            $imageLimit = $this->getOption('image_limit', 4);
-            
-            // Get images from the page
-            $images = $this->prepareImagesForSyndication($page, $imageLimit);
-            
-            // Process and upload images
-            if (count($images) > 0) {
-                
-                $record['embed'] = [
-                    '$type' => 'app.bsky.embed.images',
-                    'images' => []
-                ];
-                
-                foreach ($images as $image) {
-                    try {
-                        // Use config for image size
-                        $useOriginal = $this->config->option('use_original_image_size', false);
-                        $preset = $this->config->option('image_preset', '1800w');
-                        if ($useOriginal) {
-                            $imageFile = $image; // Use original
-                        } else {
-                            // Use the getThumbPreset method to get the preset name
-                            $presetName = $this->getThumbPreset($preset);
-                            $imageFile = $image->thumb($presetName);
-                            $imageFile->save();
-                        }
-                        $imagePath = $imageFile->root();
-                        
-                        // Get alt text
-                        $altText = ($image->alt()->exists() && $image->alt()->isNotEmpty())
-                            ? $image->alt()->value()
-                            : $page->title()->value();
-                        
-                        // Get file info for upload
-                        $fileInfo = new \finfo(FILEINFO_MIME_TYPE);
-                        $mimeType = $fileInfo->file($imagePath);
-                        
-                        // Upload the image using the v2 API
-                        $imageData = file_get_contents($imagePath);
-                        $response = $bluesky->request('POST', 'com.atproto.repo.uploadBlob', [], $imageData, $mimeType);
-                        
-                        if (isset($response->blob)) {
-                            // Add the image to the embed
-                            $record['embed']['images'][] = [
-                                'alt' => $altText,
-                                'image' => $response->blob
-                            ];
-                        } else {
-                            error_log('POSSE Plugin: Failed to upload image: ' . $imagePath);
-                        }
-                    } catch (\Exception $e) {
-                        error_log('POSSE Plugin: Error processing image: ' . $e->getMessage());
-                    }
-                }
-                
-                // If no images were uploaded successfully, remove the embed
-                if (empty($record['embed']['images'])) {
-                    unset($record['embed']);
-                }
+            // Add facets if any exist
+            if (!empty($facets)) {
+                $record['facets'] = $facets;
             }
             
-            // Add facets for URLs and hashtags in the content
-            $urlFacets = $this->extractUrlFacets($blueskyContent);
-            $hashtagFacets = $this->extractHashtagFacets($blueskyContent);
-            $record['facets'] = array_merge($urlFacets, $hashtagFacets);
+            // Process images
+            $imageLimit = $this->getOption('image_limit', 4);
+            $images = $this->prepareImagesForSyndication($page, $imageLimit);
+            
+            if (!empty($images)) {
+                $processedImages = $this->processImages($images, $bluesky, $page);
+                
+                if (!empty($processedImages)) {
+                    $record['embed'] = [
+                        '$type' => 'app.bsky.embed.images',
+                        'images' => $processedImages
+                    ];
+                }
+            }
             
             // Get the account DID
             $did = $bluesky->getAccountDid();
@@ -173,7 +131,6 @@ class BlueskyService extends AbstractService
                 'repo' => $did,
                 'record' => $record
             ];
-            
             
             // Create the post
             $response = $bluesky->request('POST', 'com.atproto.repo.createRecord', $post);
@@ -215,156 +172,54 @@ class BlueskyService extends AbstractService
     }
     
     /**
-     * Format content specifically for Bluesky with proper newlines
-     * 
-     * @param \Kirby\Cms\Page $page The page for context
-     * @param string $content The original processed content
-     * @return string Content formatted for Bluesky
-     */
-    protected function formatContentForBluesky(Page $page, string $content): string
-    {
-        // Get the template from config
-        $template = $this->config->option('template', '{{title}} {{url}} {{tags}}');
-        
-        // First detect if content matches the pattern of title immediately followed by URL
-        if (preg_match('/(.*?)(https?:\/\/[^\s]+)(.*)/', $content, $matches)) {
-            // Extract title, URL, and remainder (tags)
-            $title = trim($matches[1]);
-            $url = $matches[2];
-            $remainder = trim($matches[3]);
-            
-            // Now build content with explicit newlines for Bluesky
-            $blueskyContent = $title . "\n\n" . $url;
-            
-            // Add remainder (tags) if any
-            if (!empty($remainder)) {
-                $blueskyContent .= "\n\n" . $remainder;
-            }
-        } else {
-            // If we can't detect title/URL pattern, use literal substitution
-            // Replace single space between {{title}} and {{url}} in template with double newline
-            $blueskyTemplate = preg_replace('/{{title}}\s+{{url}}/', '{{title}}\n\n{{url}}', $template);
-            
-            // Replace single space between {{url}} and {{tags}} with double newline
-            $blueskyTemplate = preg_replace('/{{url}}\s+{{tags}}/', '{{url}}\n\n{{tags}}', $blueskyTemplate);
-            
-            // Process the template with our custom Bluesky template
-            $blueskyContent = $this->processTemplate($page, $blueskyTemplate);
-            
-        }
-        
-        return $blueskyContent;
-    }
-    
-    /**
-     * Process a template with page content
-     * 
-     * @param \Kirby\Cms\Page $page The page to use for template variables
-     * @param string $template The template to process
-     * @return string The processed content
-     */
-    protected function processTemplate(Page $page, string $template): string
-    {
-        
-        // Basic replacements
-        $replacements = [
-            '{{title}}' => $page->title()->value(),
-            '{{url}}' => $page->url(),
-            '{{date}}' => $page->date()->exists() ? $page->date()->toDate('Y-m-d') : date('Y-m-d')
-        ];
-        
-        // Add tags if available
-        if ($page->tags()->exists() && $page->tags()->isNotEmpty()) {
-            $tags = $page->tags()->split();
-            $hashTags = array_map(function($tag) {
-                // Clean the tag (remove spaces, special chars, but keep underscores)
-                // Bluesky hashtags can contain alphanumeric characters and underscores
-                $tag = preg_replace('/[^a-zA-Z0-9_]/', '', $tag);
-                return '#' . $tag;
-            }, $tags);
-            
-            $replacements['{{tags}}'] = implode(' ', $hashTags);
-        } else {
-            $replacements['{{tags}}'] = '';
-        }
-        
-        // Replace all placeholders
-        $content = str_replace(array_keys($replacements), array_values($replacements), $template);
-        
-        // Clean up extra newlines from empty placeholders
-        $content = preg_replace("/\n{3,}/", "\n\n", $content);
-        $content = trim($content);
-        
-        
-        return $content;
-    }
-    
-    /**
-     * Extract URLs and hashtags from content and create facets for Bluesky
-     * 
-     * @param string $content The content to extract URLs and hashtags from
-     * @return array Array of facets for Bluesky
+     * Extract URL facets from content
      */
     protected function extractUrlFacets(string $content): array
     {
+        // Convert literal \n to actual newlines
+        $content = str_replace('\n', "\n", $content);
+        
+        // Split content into lines for processing
+        $lines = explode("\n", $content);
+        
         $facets = [];
+        $currentBytePosition = 0;
         
-        // Extract URLs from content
-        $words = preg_split('/\s+/', $content);
-        
-        foreach ($words as $word) {
-            // Trim any punctuation from the end of the word
-            $word = rtrim($word, '.,:;!?()[]{}<>');
+        // Process each line
+        foreach ($lines as $line) {
+            // Use a simpler URL regex that handles localhost
+            $urlPattern = '/(?:^|\s|\()((https?:\/\/[-a-zA-Z0-9@:%._\+~#=]{1,256}(?:\.[a-zA-Z0-9()]{1,6})?\b(?:[-a-zA-Z0-9()@:%_\+.~#?&\/=]*[-a-zA-Z0-9@%_\+~#\/=])))/u';
             
-            // Check if the word is a URL using PHP's filter_var
-            if (filter_var($word, FILTER_VALIDATE_URL)) {
-                // Find the position of this URL in the original string
-                $position = strpos($content, $word);
-                
-                if ($position !== false) {
-                    $byteLength = strlen($word);
+            if (preg_match_all($urlPattern, $line, $matches, PREG_OFFSET_CAPTURE)) {
+                foreach ($matches[1] as $match) {
+                    $url = $match[0];
+                    $position = $match[1];
                     
-                    // Add the facet with proper byte positions
-                    $facets[] = [
-                        'index' => [
-                            'byteStart' => $position,
-                            'byteEnd' => $position + $byteLength
-                        ],
-                        'features' => [
-                            [
-                                '$type' => 'app.bsky.richtext.facet#link',
-                                'uri' => $word
+                    // Calculate byte positions relative to the entire content
+                    $byteStart = $currentBytePosition + $position;
+                    $byteEnd = $byteStart + strlen($url);
+                    
+                    // Validate URL
+                    if (filter_var($url, FILTER_VALIDATE_URL)) {
+                        // Create URL facet
+                        $facets[] = [
+                            'index' => [
+                                'byteStart' => $byteStart,
+                                'byteEnd' => $byteEnd
+                            ],
+                            'features' => [
+                                [
+                                    '$type' => 'app.bsky.richtext.facet#link',
+                                    'uri' => $url
+                                ]
                             ]
-                        ]
-                    ];
+                        ];
+                    }
                 }
             }
-        }
-        
-        // Extract hashtags from content
-        preg_match_all('/#([a-zA-Z0-9_]+)/u', $content, $matches, PREG_OFFSET_CAPTURE);
-        
-        if (!empty($matches[0])) {
-            foreach ($matches[0] as $index => $match) {
-                $fullHashtag = $match[0]; // The full hashtag with #
-                $position = $match[1];    // Position in the content
-                $tag = $matches[1][$index][0]; // Just the tag part without the #
-                $byteLength = strlen($fullHashtag);
-                
-                // Add the facet for the hashtag
-                $facets[] = [
-                    'index' => [
-                        'byteStart' => $position,
-                        'byteEnd' => $position + $byteLength
-                    ],
-                    'features' => [
-                        [
-                            '$type' => 'app.bsky.richtext.facet#tag',
-                            'tag' => $tag
-                        ]
-                    ]
-                ];
-            }
+            
+            // Update byte position for next line
+            $currentBytePosition += strlen($line) + 1; // +1 for the newline
         }
         
         return $facets;
@@ -392,7 +247,6 @@ class BlueskyService extends AbstractService
                 // Get the byte length of the full hashtag
                 $byteLength = strlen($fullTag);
                 
-                
                 // Add the facet with proper byte positions
                 $facets[] = [
                     'index' => [
@@ -410,5 +264,107 @@ class BlueskyService extends AbstractService
         }
         
         return $facets;
+    }
+
+    /**
+     * Process and upload images for Bluesky
+     * 
+     * @param array $images Array of Kirby image objects
+     * @param BlueskyApi $bluesky Bluesky API instance
+     * @param Page $page The page object for alt text fallback
+     * @return array Array of processed image records
+     */
+    protected function processImages(array $images, BlueskyApi $bluesky, Page $page): array
+    {
+        $processedImages = [];
+        
+        foreach ($images as $image) {
+            try {
+                // Get image file with proper size
+                $useOriginal = $this->config->option('use_original_image_size', false);
+                $preset = $this->config->option('image_preset', '1800w');
+                
+                if ($useOriginal) {
+                    $imageFile = $image;
+                } else {
+                    $presetName = $this->getThumbPreset($preset);
+                    $imageFile = $image->thumb($presetName);
+                    $imageFile->save();
+                }
+                
+                $imagePath = $imageFile->root();
+                
+                // Validate image file exists and is readable
+                if (!file_exists($imagePath) || !is_readable($imagePath)) {
+                    error_log('POSSE Plugin: Image file not accessible: ' . $imagePath);
+                    continue;
+                }
+                
+                // Get file info
+                $fileInfo = new \finfo(FILEINFO_MIME_TYPE);
+                $mimeType = $fileInfo->file($imagePath);
+                
+                // Validate mime type
+                if (!in_array($mimeType, ['image/jpeg', 'image/png', 'image/gif', 'image/webp'])) {
+                    error_log('POSSE Plugin: Unsupported image type: ' . $mimeType);
+                    continue;
+                }
+                
+                // Get alt text
+                $altText = ($image->alt()->exists() && $image->alt()->isNotEmpty())
+                    ? $image->alt()->value()
+                    : $page->title()->value();
+                
+                // Read image data
+                $imageData = file_get_contents($imagePath);
+                if ($imageData === false) {
+                    error_log('POSSE Plugin: Failed to read image file: ' . $imagePath);
+                    continue;
+                }
+                
+                // Upload image
+                $response = $bluesky->request('POST', 'com.atproto.repo.uploadBlob', [], $imageData, $mimeType);
+                
+                if (isset($response->blob)) {
+                    $processedImages[] = [
+                        'alt' => $altText,
+                        'image' => $response->blob
+                    ];
+                } else {
+                    error_log('POSSE Plugin: Failed to upload image: ' . $imagePath);
+                }
+            } catch (\Exception $e) {
+                error_log('POSSE Plugin: Error processing image: ' . $e->getMessage());
+            }
+        }
+        
+        return $processedImages;
+    }
+
+    /**
+     * Sanitize content for Bluesky
+     */
+    protected function sanitizeContent(string $content): string
+    {
+        // First, convert any literal \n strings to actual newlines
+        $content = str_replace('\n', "\n", $content);
+        
+        // Remove control characters (except newlines)
+        $content = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', '', $content);
+        
+        // Normalize line endings to \n
+        $content = str_replace(["\r\n", "\r"], "\n", $content);
+        
+        // Ensure URLs are properly separated with spaces
+        $content = preg_replace('/([^\s])(https?:\/\/)/', '$1 $2', $content);
+        
+        // Remove excessive line breaks (more than 2 consecutive)
+        $content = preg_replace('/\n{3,}/', "\n\n", $content);
+        
+        // Ensure double line breaks between sections
+        $content = preg_replace('/([^\n])\n([^\n])/', '$1\n\n$2', $content);
+        
+        // Trim whitespace while preserving internal line breaks
+        return trim($content);
     }
 }

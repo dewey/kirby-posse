@@ -88,7 +88,6 @@ class MastodonService extends AbstractService
                 }
             }
             
-            // Post status to Mastodon
             $result = $this->postToMastodon($instanceUrl, $apiToken, $content, $mediaIds);
             
             if (isset($result['id'])) {
@@ -213,6 +212,9 @@ class MastodonService extends AbstractService
      */
     protected function postToMastodon($instanceUrl, $apiToken, $content, $mediaIds = []): array
     {
+        // Convert literal \n to actual newlines
+        $content = str_replace('\n', "\n", $content);
+        
         $url = $instanceUrl . '/api/v1/statuses';
         
         $postData = [

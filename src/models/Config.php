@@ -11,7 +11,6 @@ class Config
     private $defaults = [
         'contenttypes' => [],
         'syndication_delay' => 60,
-        'template' => '{{title}}\n\n{{url}}\n\n{{tags}}',
         'auth' => [
             'token' => '',
             'enabled' => false
