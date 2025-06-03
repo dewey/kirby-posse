@@ -10,8 +10,8 @@ class Auth
     public static function handle(App $kirby)
     {
         $config = new \Notmyhostname\Posse\Models\Config();
-        $token = $config->option('auth_token');
-        $enableTokenAuth = $config->option('enable_token_auth');
+        $token = $config->option('auth.token');
+        $enableTokenAuth = $config->option('auth.enabled');
         
         // If token auth is enabled and token is set, use token authentication
         if ($enableTokenAuth && !empty($token)) {

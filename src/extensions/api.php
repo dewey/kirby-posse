@@ -458,6 +458,16 @@ return [
                             'message' => 'No settings data provided'
                         ];
                     }
+
+                    // Validate token length if token auth is enabled
+                    if (isset($data['auth']['enabled']) && $data['auth']['enabled'] === true) {
+                        if (empty($data['auth']['token']) || strlen($data['auth']['token']) < 8) {
+                            return [
+                                'status' => 'error',
+                                'message' => 'The token must be at least 8 characters long'
+                            ];
+                        }
+                    }
                     
                     // Save settings
                     $config = new Config();

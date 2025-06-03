@@ -66,7 +66,8 @@ The plugin stores all settings in a YAML file at `site/config/posse.yml`, making
 ```yaml
 # Authentication settings
 auth:
-  token: null  # Your API token for authentication
+  token: "your-secret-token"
+  enabled: true
 
 # Content types to track (post, photo, etc.)
 contenttypes:
@@ -77,27 +78,22 @@ contenttypes:
 syndication_delay: 60
 
 # Post template using placeholders: {{title}}, {{url}}, {{tags}}
-template: |
-  {{title}}
-
-  {{url}}
-
-  {{tags}}
+template: "{{title}}\n\n{{url}}\n\n{{tags}}"
 
 # Image settings
 use_original_image_size: false  # Set to true to use original image sizes
-image_preset: '1800w'  # Preset to use for image resizing (e.g., '900w', '1800w', 'square-900w')
+image_preset: "1800w"  # Preset to use for image resizing (e.g., '900w', '1800w', 'square-900w')
 
 services:
   mastodon:
     enabled: true
-    instance_url: https://mastodon.social
-    api_token: your-api-token
+    instance_url: "https://mastodon.social"
+    api_token: "your-mastodon-token"
     image_limit: 4
   bluesky:
     enabled: true
-    instance_url: https://bsky.social
-    api_token: yourname.bsky.social:1234-4567-...
+    instance_url: "https://bsky.social"
+    api_token: "your-bluesky-token"
     image_limit: 4
 ```
 

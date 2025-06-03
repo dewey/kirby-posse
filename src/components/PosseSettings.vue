@@ -43,7 +43,7 @@ export default {
         contenttypes: '',
         syndication_delay: 60,
         template: '{{title}}\n\n{{url}}\n\n{{tags}}',
-        enable_token_auth: false,
+        auth_enabled: false,
         auth_token: '',
         mastodon_enabled: false,
         mastodon_instance_url: '',
@@ -143,7 +143,7 @@ export default {
           theme: 'none',
           width: '1/3'
         },
-        enable_token_auth: {
+        auth_enabled: {
           label: 'Enable Token Authentication',
           type: 'toggle',
           text: ['Disabled', 'Enabled'],
@@ -155,8 +155,14 @@ export default {
           type: 'text',
           help: 'This token will be used in the X-POSSE-Token header for your cron jobs, as shown in the commands below.',
           width: '1/2',
+          validate: {
+            minLength: 8
+          },
+          messages: {
+            minLength: 'The token must be at least 8 characters long'
+          },
           when: {
-            enable_token_auth: true
+            auth_enabled: true
           }
         },
         auth_token_spacer: {
@@ -165,7 +171,7 @@ export default {
           theme: 'none',
           width: '1/3',
           when: {
-            enable_token_auth: true
+            auth_enabled: true
           }
         },
         scheduling_command_label: {
@@ -329,8 +335,8 @@ export default {
           contenttypes: this.mapContentTypes(data.contenttypes),
           syndication_delay: data.syndication_delay || 60,
           template: data.template || '{{title}}\n\n{{url}}\n\n{{tags}}',
-          enable_token_auth: data.enable_token_auth || false,
-          auth_token: data.auth_token || '',
+          auth_enabled: data.auth?.enabled || false,
+          auth_token: data.auth?.token || '',
           
           // Mastodon settings
           mastodon_enabled: data.services?.mastodon?.enabled || false,
@@ -400,8 +406,10 @@ export default {
           template: this.formData.template,
           use_original_image_size: this.formData.use_original_image_size,
           image_preset: this.formData.image_preset,
-          auth_token: this.formData.auth_token,
-          enable_token_auth: this.formData.enable_token_auth
+          auth: {
+            token: this.formData.auth_token,
+            enabled: this.formData.auth_enabled
+          }
         };
         
         // Use CSRF token from props
@@ -417,8 +425,9 @@ export default {
           body: JSON.stringify(apiData)
         });
         
-        if (!response.ok) {
-          const data = await response.json();
+        const data = await response.json();
+        
+        if (!response.ok || data.status === 'error') {
           throw new Error(data.message || `Failed to save settings: ${response.status}`);
         }
         
@@ -426,7 +435,7 @@ export default {
         this.$store.dispatch("notification/success", "Settings saved successfully");
       } catch (error) {
         console.error("Error saving settings:", error);
-        this.$store.dispatch("notification/error", "Failed to save settings: " + error.message);
+        this.$store.dispatch("notification/error", error.message);
       }
     },
     

@@ -9,6 +9,13 @@ class Config
     private $configFile;
     private $config;
     private $defaults = [
+        'contenttypes' => [],
+        'syndication_delay' => 60,
+        'template' => '{{title}}\n\n{{url}}\n\n{{tags}}',
+        'auth' => [
+            'token' => '',
+            'enabled' => false
+        ],
         'services' => [
             'mastodon' => [
                 'enabled' => false,
@@ -23,13 +30,8 @@ class Config
                 'image_limit' => 4
             ]
         ],
-        'contenttypes' => [],
-        'syndication_delay' => 60,
-        'template' => "{{title}}\n\n{{url}}\n\n{{tags}}",
         'use_original_image_size' => false,
-        'image_preset' => '1800w',
-        'auth_token' => '',
-        'enable_token_auth' => false
+        'image_preset' => '1800w'
     ];
     
     public function __construct()
