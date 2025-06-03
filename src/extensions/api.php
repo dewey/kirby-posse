@@ -15,12 +15,9 @@ return [
         [
             'pattern' => 'posse/queue',
             'method' => 'GET',
-            'auth' => false,
+            'auth' => true,
             'action' => function () {
                 try {
-                    // Apply authentication
-                    Auth::handle(kirby());
-                    
                     $posse = new Posse();
                     
                     // First get pending queue items (non-syndicated and non-ignored)
@@ -490,10 +487,12 @@ return [
         [
             'pattern' => 'posse/cron-syndicate',
             'method' => 'GET',
-            'auth' => true,
+            'auth' => false,
             'action' => function () {
-                // Authentication is handled by Kirby's API auth system
                 try {
+                    // Apply token authentication for cron jobs
+                    Auth::handle(kirby());
+                    
                     $posse = new Posse();
                     
                     // Get items ready for syndication
