@@ -6,6 +6,8 @@
  */
 
 $dir = __DIR__ . '/models';
+$middlewareDir = __DIR__ . '/middleware';
+
 load([
     // Core Models
     'Notmyhostname\\Posse\\Models\\Config'     => $dir . '/Config.php',
@@ -19,4 +21,7 @@ load([
     // Service Implementations
     'Notmyhostname\\Posse\\Models\\Services\\MastodonService' => $dir . '/Services/MastodonService.php',
     'Notmyhostname\\Posse\\Models\\Services\\BlueskyService'  => $dir . '/Services/BlueskyService.php',
+
+    // Middleware
+    'Notmyhostname\\Posse\\Middleware\\Auth'   => $middlewareDir . '/auth.php',
 ]);

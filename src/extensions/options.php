@@ -8,4 +8,7 @@
 
 return [
     'services' => ['mastodon', 'bluesky'],
+    'auth' => [
+        'token' => null, // API token for authentication
+    ],
 ];

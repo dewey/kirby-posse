@@ -11,6 +11,7 @@ This plugin enables Publish (on your) Own Site, Syndicate Elsewhere (POSSE) func
 - Support for syndication image limits (Up to 4 images, settings to reuse your thumbnail size presets)
 - Automated cron job endpoint for scheduled syndication
 - SQLite database for storing syndication history and queue
+- Simple authentication with token or Basic Auth
 
 ## Installation
 
@@ -35,19 +36,38 @@ After installation, configure the plugin through the Panel at "POSSE > Settings"
 
 ## Configuration
 
-Everything related to the plugin can be configured through the Kirby Panel. The automated syndication feature requires Basic Auth to be enabled in your config.php:
+Everything related to the plugin can be configured through the Kirby Panel. The automated syndication feature requires authentication to be configured.
 
-```php
-return [
-    'api.basicAuth' => true
-];
-```
+### Authentication
+
+The plugin supports two authentication methods, with a simple fallback mechanism:
+
+1. **Token Authentication** (Recommended)
+   - Set your API token in the Panel at "POSSE > Settings"
+   - Use the token in requests with the `X-POSSE-Token` header
+   - If no token is set, the plugin falls back to Basic Auth
+
+2. **Basic Auth** (Fallback)
+   ```php
+   return [
+       'api.basicAuth' => true
+   ];
+   ```
+
+The authentication flow is:
+1. If a token is configured, it must be provided in the `X-POSSE-Token` header
+2. If no token is configured, Basic Auth is required
+3. If neither is configured, requests will be rejected
 
 ### Configuration File Structure
 
 The plugin stores all settings in a YAML file at `site/config/posse.yml`, making settings persistent even when reinstalling the plugin. The `posse.yml` file contains all plugin settings with the following structure:
 
 ```yaml
+# Authentication settings
+auth:
+  token: null  # Your API token for authentication
+
 # Content types to track (post, photo, etc.)
 contenttypes:
   post: true
@@ -95,9 +115,15 @@ This database tracks which posts have been syndicated to which services and mana
 
 To set up automated syndication with a cron job:
 
-1. Make sure Basic Auth is enabled in your config.php
+1. Configure authentication (Token or Basic Auth)
 2. Set up a cron job that runs a few times per hour. In this example every 10 minutes:
 
+### Using Token Authentication:
+```
+*/10 * * * * curl -s -H "X-POSSE-Token: YOUR-TOKEN" "https://yourdomain.com/api/posse/cron-syndicate" > /dev/null 2>&1
+```
+
+### Using Basic Auth:
 ```
 */10 * * * * curl -s -u "USERNAME:PASSWORD" "https://yourdomain.com/api/posse/cron-syndicate" > /dev/null 2>&1
 ```
@@ -106,9 +132,17 @@ Replace USERNAME and PASSWORD with your Kirby panel credentials.
 
 For monitoring with Healthchecks.io:
 
+### Using Token Authentication:
+```
+*/10 * * * * curl -s -H "X-POSSE-Token: YOUR-TOKEN" "https://yourdomain.com/api/posse/cron-syndicate" && curl -fsS -m 10 https://hc-ping.com/YOUR-UUID > /dev/null 2>&1
+```
+
+### Using Basic Auth:
 ```
 */10 * * * * curl -s -u "USERNAME:PASSWORD" "https://yourdomain.com/api/posse/cron-syndicate" && curl -fsS -m 10 https://hc-ping.com/YOUR-UUID > /dev/null 2>&1
 ```
+
+Replace USERNAME and PASSWORD with your Kirby panel credentials.
 
 ## Post Templates
 

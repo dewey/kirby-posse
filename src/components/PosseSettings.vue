@@ -43,6 +43,8 @@ export default {
         contenttypes: '',
         syndication_delay: 60,
         template: '{{title}}\n\n{{url}}\n\n{{tags}}',
+        enable_token_auth: false,
+        auth_token: '',
         mastodon_enabled: false,
         mastodon_instance_url: '',
         mastodon_api_token: '',
@@ -131,9 +133,40 @@ export default {
         scheduling_auth: {
           label: 'Authentication',
           type: 'info',
-          text: 'This feature requires <a href="https://getkirby.com/docs/guide/api/authentication#http-basic-auth" target="_blank">enabling Basic Auth</a> in your Kirby config.',
+          text: 'This feature requires authentication. You can use either <a href="https://getkirby.com/docs/guide/api/authentication#http-basic-auth" target="_blank">Basic Auth</a> or configure a token below. If a token is configured, it will take precedence over Basic Auth. Token authentication is required if you have <a href="https://getkirby.com/docs/guide/authentication#two-factor-authentication" target="_blank">Two-Factor Authentication (2FA)</a> enabled on your Kirby installation.',
           theme: 'notice',
           width: '2/3'
+        },
+        scheduling_auth_spacer: {
+          type: 'info',
+          text: ' ',
+          theme: 'none',
+          width: '1/3'
+        },
+        enable_token_auth: {
+          label: 'Enable Token Authentication',
+          type: 'toggle',
+          text: ['Disabled', 'Enabled'],
+          width: '1/6',
+          help: 'Use a token for authentication instead of Basic Auth.'
+        },
+        auth_token: {
+          label: 'API Token',
+          type: 'text',
+          help: 'This token will be used in the X-POSSE-Token header for your cron jobs, as shown in the commands below.',
+          width: '1/2',
+          when: {
+            enable_token_auth: true
+          }
+        },
+        auth_token_spacer: {
+          type: 'info',
+          text: ' ',
+          theme: 'none',
+          width: '1/3',
+          when: {
+            enable_token_auth: true
+          }
         },
         scheduling_command_label: {
           label: 'Cron Job Command',
@@ -144,9 +177,11 @@ export default {
         scheduling_command_info: {
           type: 'info',
           text: `<div style="font-family: 'Courier New', Courier, monospace; background-color: #222; color: white; padding: 12px; border-radius: 4px; white-space: pre-wrap; display: block;">
-# Replace USERNAME and PASSWORD with your Kirby panel credentials
-
+# Option 1: Using Basic Auth (replace USERNAME and PASSWORD with your Kirby panel credentials)
 */10 * * * * curl -s -u "USERNAME:PASSWORD" ${window.location.origin}/api/posse/cron-syndicate > /dev/null 2>&1
+
+# Option 2: Using API Token (replace YOUR-TOKEN with your configured token)
+*/10 * * * * curl -s -H "X-POSSE-Token: YOUR-TOKEN" ${window.location.origin}/api/posse/cron-syndicate > /dev/null 2>&1
 </div>`,
           theme: 'none',
           width: '2/3'
@@ -166,9 +201,11 @@ export default {
         scheduling_monitoring_command_info: {
           type: 'info',
           text: `<div style="font-family: 'Courier New', Courier, monospace; background-color: #222; color: white; padding: 12px; border-radius: 4px; white-space: pre-wrap; display: block;">
-# Replace USERNAME, PASSWORD, and YOUR-UUID with your values
-
+# Option 1: Using Basic Auth (replace USERNAME, PASSWORD, and YOUR-UUID with your values)
 */10 * * * * curl -s -u "USERNAME:PASSWORD" ${window.location.origin}/api/posse/cron-syndicate && curl -fsS -m 10 https://hc-ping.com/YOUR-UUID > /dev/null 2>&1
+
+# Option 2: Using API Token (replace YOUR-TOKEN and YOUR-UUID with your values)
+*/10 * * * * curl -s -H "X-POSSE-Token: YOUR-TOKEN" ${window.location.origin}/api/posse/cron-syndicate && curl -fsS -m 10 https://hc-ping.com/YOUR-UUID > /dev/null 2>&1
 </div>`,
           theme: 'none',
           width: '2/3'
@@ -292,6 +329,8 @@ export default {
           contenttypes: this.mapContentTypes(data.contenttypes),
           syndication_delay: data.syndication_delay || 60,
           template: data.template || '{{title}}\n\n{{url}}\n\n{{tags}}',
+          enable_token_auth: data.enable_token_auth || false,
+          auth_token: data.auth_token || '',
           
           // Mastodon settings
           mastodon_enabled: data.services?.mastodon?.enabled || false,
@@ -360,7 +399,9 @@ export default {
           syndication_delay: parseInt(this.formData.syndication_delay) || 60,
           template: this.formData.template,
           use_original_image_size: this.formData.use_original_image_size,
-          image_preset: this.formData.image_preset, // Just the preset name
+          image_preset: this.formData.image_preset,
+          auth_token: this.formData.auth_token,
+          enable_token_auth: this.formData.enable_token_auth
         };
         
         // Use CSRF token from props

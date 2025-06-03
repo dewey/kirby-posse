@@ -11,7 +11,7 @@
  * @link      https://github.com/dewey/kirby-posse
  * @copyright Philipp Defner
  * @license   MIT
- * @version   1.0.0
+ * @version   1.0.2
  */
 
 // Include the Composer autoloader if available
@@ -22,7 +22,7 @@ require_once __DIR__ . '/src/bootstrap.php';
 
 // Register the plugin
 Kirby::plugin('notmyhostname/posse', [
-    'version'      => '1.0.0',
+    'version'      => '1.0.2',
     'areas'        => require_once __DIR__ . '/src/extensions/areas.php',
     'hooks'        => require_once __DIR__ . '/src/extensions/hooks.php',
     'routes'       => require_once __DIR__ . '/src/extensions/routes.php',

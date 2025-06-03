@@ -8,15 +8,19 @@
 
 use Notmyhostname\Posse\Models\Posse;
 use Notmyhostname\Posse\Models\Config;
+use Notmyhostname\Posse\Middleware\Auth;
 
 return [
     'routes' => [
         [
             'pattern' => 'posse/queue',
             'method' => 'GET',
-            'auth' => true,
+            'auth' => false,
             'action' => function () {
                 try {
+                    // Apply authentication
+                    Auth::handle(kirby());
+                    
                     $posse = new Posse();
                     
                     // First get pending queue items (non-syndicated and non-ignored)

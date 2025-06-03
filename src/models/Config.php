@@ -27,7 +27,9 @@ class Config
         'syndication_delay' => 60,
         'template' => "{{title}}\n\n{{url}}\n\n{{tags}}",
         'use_original_image_size' => false,
-        'image_preset' => '1800w'
+        'image_preset' => '1800w',
+        'auth_token' => '',
+        'enable_token_auth' => false
     ];
     
     public function __construct()
