@@ -18,7 +18,7 @@ class Auth
             $requestToken = $kirby->request()->header('X-POSSE-Token');
             
             if (empty($requestToken) || $requestToken !== $token) {
-                throw new PermissionException('Invalid or missing token');
+                throw new PermissionException('Token authentication is enabled but the token is missing or invalid. Please use the X-POSSE-Token header as token authentication takes precedence over Basic Auth when enabled.');
             }
             return;
         }
