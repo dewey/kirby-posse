@@ -11,6 +11,7 @@ This plugin enables Publish (on your) Own Site, Syndicate Elsewhere (POSSE) func
 - Support for syndication image limits (Up to 4 images, settings to reuse your thumbnail size presets)
 - Automated cron job endpoint for scheduled syndication
 - SQLite database for storing syndication history and queue
+- Simple authentication with token or Basic Auth
 
 ## Installation
 
@@ -35,19 +36,39 @@ After installation, configure the plugin through the Panel at "POSSE > Settings"
 
 ## Configuration
 
-Everything related to the plugin can be configured through the Kirby Panel. The automated syndication feature requires Basic Auth to be enabled in your config.php:
+Everything related to the plugin can be configured through the Kirby Panel. The automated syndication feature requires authentication to be configured.
 
-```php
-return [
-    'api.basicAuth' => true
-];
-```
+### Authentication
+
+The plugin supports two authentication methods, with a simple fallback mechanism:
+
+1. **Token Authentication** (Recommended)
+   - Set your API token in the Panel at "POSSE > Settings"
+   - Use the token in requests with the `X-POSSE-Token` header
+   - If no token is set, the plugin falls back to Basic Auth
+
+2. **Basic Auth** (Fallback)
+   ```php
+   return [
+       'api.basicAuth' => true
+   ];
+   ```
+
+The authentication flow is:
+1. If a token is configured, it must be provided in the `X-POSSE-Token` header
+2. If no token is configured, Basic Auth is required
+3. If neither is configured, requests will be rejected
 
 ### Configuration File Structure
 
 The plugin stores all settings in a YAML file at `site/config/posse.yml`, making settings persistent even when reinstalling the plugin. The `posse.yml` file contains all plugin settings with the following structure:
 
 ```yaml
+# Authentication settings
+auth:
+  token: "your-secret-token"
+  enabled: true
+
 # Content types to track (post, photo, etc.)
 contenttypes:
   post: true
@@ -57,27 +78,22 @@ contenttypes:
 syndication_delay: 60
 
 # Post template using placeholders: {{title}}, {{url}}, {{tags}}
-template: |
-  {{title}}
-
-  {{url}}
-
-  {{tags}}
+template: "{{title}}\n\n{{url}}\n\n{{tags}}"
 
 # Image settings
 use_original_image_size: false  # Set to true to use original image sizes
-image_preset: '1800w'  # Preset to use for image resizing (e.g., '900w', '1800w', 'square-900w')
+image_preset: "1800w"  # Preset to use for image resizing (e.g., '900w', '1800w', 'square-900w')
 
 services:
   mastodon:
     enabled: true
-    instance_url: https://mastodon.social
-    api_token: your-api-token
+    instance_url: "https://mastodon.social"
+    api_token: "your-mastodon-token"
     image_limit: 4
   bluesky:
     enabled: true
-    instance_url: https://bsky.social
-    api_token: yourname.bsky.social:1234-4567-...
+    instance_url: "https://bsky.social"
+    api_token: "your-bluesky-token"
     image_limit: 4
 ```
 
@@ -95,9 +111,15 @@ This database tracks which posts have been syndicated to which services and mana
 
 To set up automated syndication with a cron job:
 
-1. Make sure Basic Auth is enabled in your config.php
+1. Configure authentication (Token or Basic Auth)
 2. Set up a cron job that runs a few times per hour. In this example every 10 minutes:
 
+### Using Token Authentication:
+```
+*/10 * * * * curl -s -H "X-POSSE-Token: YOUR-TOKEN" "https://yourdomain.com/api/posse/cron-syndicate" > /dev/null 2>&1
+```
+
+### Using Basic Auth:
 ```
 */10 * * * * curl -s -u "USERNAME:PASSWORD" "https://yourdomain.com/api/posse/cron-syndicate" > /dev/null 2>&1
 ```
@@ -106,9 +128,17 @@ Replace USERNAME and PASSWORD with your Kirby panel credentials.
 
 For monitoring with Healthchecks.io:
 
+### Using Token Authentication:
+```
+*/10 * * * * curl -s -H "X-POSSE-Token: YOUR-TOKEN" "https://yourdomain.com/api/posse/cron-syndicate" && curl -fsS -m 10 https://hc-ping.com/YOUR-UUID > /dev/null 2>&1
+```
+
+### Using Basic Auth:
 ```
 */10 * * * * curl -s -u "USERNAME:PASSWORD" "https://yourdomain.com/api/posse/cron-syndicate" && curl -fsS -m 10 https://hc-ping.com/YOUR-UUID > /dev/null 2>&1
 ```
+
+Replace USERNAME and PASSWORD with your Kirby panel credentials.
 
 ## Post Templates
 

@@ -8,6 +8,7 @@
 
 use Notmyhostname\Posse\Models\Posse;
 use Notmyhostname\Posse\Models\Config;
+use Notmyhostname\Posse\Middleware\Auth;
 
 return [
     'routes' => [
@@ -457,6 +458,16 @@ return [
                             'message' => 'No settings data provided'
                         ];
                     }
+
+                    // Validate token length if token auth is enabled
+                    if (isset($data['auth']['enabled']) && $data['auth']['enabled'] === true) {
+                        if (empty($data['auth']['token']) || strlen($data['auth']['token']) < 8) {
+                            return [
+                                'status' => 'error',
+                                'message' => 'The token must be at least 8 characters long'
+                            ];
+                        }
+                    }
                     
                     // Save settings
                     $config = new Config();
@@ -486,10 +497,12 @@ return [
         [
             'pattern' => 'posse/cron-syndicate',
             'method' => 'GET',
-            'auth' => true,
+            'auth' => false,
             'action' => function () {
-                // Authentication is handled by Kirby's API auth system
                 try {
+                    // Apply token authentication for cron jobs
+                    Auth::handle(kirby());
+                    
                     $posse = new Posse();
                     
                     // Get items ready for syndication
