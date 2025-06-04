@@ -124,6 +124,9 @@ class BlueskyService extends AbstractService
                 throw new \Exception('Failed to create post - empty response');
             }
             
+            // Log the full response for debugging
+            error_log('POSSE Plugin: Bluesky API Response: ' . json_encode($response));
+            
             if (isset($response->uri)) {
                 // Format is AT URI: at://did:plc:xxxxx/app.bsky.feed.post/yyyy
                 $atUri = $response->uri;
@@ -248,18 +251,65 @@ class BlueskyService extends AbstractService
     protected function processImages(array $images, BlueskyApi $bluesky, Page $page): array
     {
         $processedImages = [];
+        // Bluesky has a hard limit of 976.56KB (1MB) for image uploads
+        // See: https://github.com/bluesky-social/atproto/discussions/1740
+        $maxSize = 976 * 1024; // 976.56KB in bytes
+        
+        // Get available presets from config
+        $presets = array_map(function($preset) {
+            return $preset['value'];
+        }, $this->config->getThumbPresets());
         
         foreach ($images as $image) {
             try {
                 $useOriginal = $this->config->option('use_original_image_size', false);
-                $preset = $this->config->option('image_preset', '1800w');
                 
                 if ($useOriginal) {
                     $imageFile = $image;
                 } else {
-                    $presetName = $this->getThumbPreset($preset);
-                    $imageFile = $image->thumb($presetName);
-                    $imageFile->save();
+                    $imageFile = null;
+                    $fileSize = PHP_INT_MAX;
+                    
+                    if (!empty($presets)) {
+                        // Try with defined presets first
+                        $preset = $this->config->option('image_preset', '1800w');
+                        $currentPresetIndex = array_search($preset, $presets);
+                        if ($currentPresetIndex === false) {
+                            $currentPresetIndex = 0;
+                        }
+                        
+                        while ($currentPresetIndex < count($presets) && $fileSize > $maxSize) {
+                            $presetName = $this->getThumbPreset($presets[$currentPresetIndex]);
+                            $imageFile = $image->thumb($presetName);
+                            $imageFile->save();
+                            
+                            $imagePath = $imageFile->root();
+                            $fileSize = filesize($imagePath);
+                            $currentPresetIndex++;
+                        }
+                    }
+                    
+                    // If presets failed or weren't defined, use WebP with 1000px width and 90% quality
+                    if ($fileSize > $maxSize) {
+                        error_log('POSSE Plugin: No presets defined or all presets failed, using WebP fallback');
+                        
+                        $imageFile = $image->thumb([
+                            'width' => 1000,
+                            'format' => 'webp',
+                            'quality' => 90
+                        ]);
+                        $imageFile->save();
+                        
+                        $imagePath = $imageFile->root();
+                        $fileSize = filesize($imagePath);
+                        $mimeType = 'image/webp';
+                    }
+                    
+                    // If still too large, skip this image
+                    if ($fileSize > $maxSize) {
+                        error_log('POSSE Plugin: Could not reduce image size below limit: ' . $fileSize . ' bytes');
+                        continue;
+                    }
                 }
                 
                 $imagePath = $imageFile->root();
