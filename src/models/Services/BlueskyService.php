@@ -12,6 +12,12 @@ use cjrasmussen\BlueskyApi\BlueskyApi;
  */
 class BlueskyService extends AbstractService
 {
+    /**
+     * Constructor for BlueskyService
+     * 
+     * @param Database $db Database instance
+     * @param Config $config Configuration instance
+     */
     public function __construct(Database $db, Config $config)
     {
         parent::__construct('bluesky', $db, $config);
@@ -27,7 +33,6 @@ class BlueskyService extends AbstractService
      */
     public function syndicate($item, Page $page, string $content): array
     {
-        // Check required configuration
         if (empty($this->serviceConfig['api_token'])) {
             return [
                 'status' => 'error',
@@ -36,9 +41,6 @@ class BlueskyService extends AbstractService
         }
         
         try {
-            // Parse the API token string which should be in format "handle:password"
-            
-            // Trim whitespace from token
             $apiToken = trim($this->serviceConfig['api_token']);
             $apiTokenParts = explode(':', $apiToken);
             
@@ -56,17 +58,13 @@ class BlueskyService extends AbstractService
             $handle = trim($handle);
             $password = trim($password);
             
-            // Create a new BlueskyApi instance and authenticate
             try {
-                // Get Bluesky host from the instance URL
                 $instanceUrl = $this->getOption('instance_url', 'https://bsky.social');
                 $host = str_replace(['https://', 'http://'], '', $instanceUrl);
                 $host = rtrim($host, '/');
                 
-                // Create a new BlueskyApi instance with the host
                 $bluesky = new BlueskyApi($host);
                 
-                // Authenticate with the API
                 if (!$bluesky->auth($handle, $password)) {
                     throw new \Exception('Authentication failed');
                 }
@@ -80,31 +78,21 @@ class BlueskyService extends AbstractService
                 ];
             }
             
-            // Process content and extract facets
             $content = $this->sanitizeContent($content);
-            
-            // Extract URL facets
             $urlFacets = $this->extractUrlFacets($content);
-            
-            // Extract hashtag facets
             $hashtagFacets = $this->extractHashtagFacets($content);
-            
-            // Combine all facets
             $facets = array_merge($urlFacets, $hashtagFacets);
             
-            // Create base record
             $record = [
                 '$type' => 'app.bsky.feed.post',
                 'text' => $content,
                 'createdAt' => date('c')
             ];
             
-            // Add facets if any exist
             if (!empty($facets)) {
                 $record['facets'] = $facets;
             }
             
-            // Process images
             $imageLimit = $this->getOption('image_limit', 4);
             $images = $this->prepareImagesForSyndication($page, $imageLimit);
             
@@ -119,36 +107,29 @@ class BlueskyService extends AbstractService
                 }
             }
             
-            // Get the account DID
             $did = $bluesky->getAccountDid();
             if (!$did) {
                 throw new \Exception('Failed to get account DID');
             }
             
-            // Create the post structure
             $post = [
                 'collection' => 'app.bsky.feed.post',
                 'repo' => $did,
                 'record' => $record
             ];
             
-            // Create the post
             $response = $bluesky->request('POST', 'com.atproto.repo.createRecord', $post);
             
             if (!$response) {
                 throw new \Exception('Failed to create post - empty response');
             }
             
-            // Extract URI from response
             if (isset($response->uri)) {
                 // Format is AT URI: at://did:plc:xxxxx/app.bsky.feed.post/yyyy
                 $atUri = $response->uri;
                 $recordId = basename($atUri);
-                
-                // The syndicated URL that links directly to the post
                 $syndicatedUrl = "https://bsky.app/profile/{$did}/post/{$recordId}";
                 
-                // Mark as syndicated
                 $this->markSyndicated($item, $syndicatedUrl, $page);
                 
                 return [
@@ -173,21 +154,20 @@ class BlueskyService extends AbstractService
     
     /**
      * Extract URL facets from content
+     * 
+     * @param string $content The content to extract URLs from
+     * @return array Array of URL facets for Bluesky
      */
     protected function extractUrlFacets(string $content): array
     {
         // Convert literal \n to actual newlines
         $content = str_replace('\n', "\n", $content);
-        
-        // Split content into lines for processing
         $lines = explode("\n", $content);
         
         $facets = [];
         $currentBytePosition = 0;
         
-        // Process each line
         foreach ($lines as $line) {
-            // Use a simpler URL regex that handles localhost
             $urlPattern = '/(?:^|\s|\()((https?:\/\/[-a-zA-Z0-9@:%._\+~#=]{1,256}(?:\.[a-zA-Z0-9()]{1,6})?\b(?:[-a-zA-Z0-9()@:%_\+.~#?&\/=]*[-a-zA-Z0-9@%_\+~#\/=])))/u';
             
             if (preg_match_all($urlPattern, $line, $matches, PREG_OFFSET_CAPTURE)) {
@@ -195,13 +175,10 @@ class BlueskyService extends AbstractService
                     $url = $match[0];
                     $position = $match[1];
                     
-                    // Calculate byte positions relative to the entire content
                     $byteStart = $currentBytePosition + $position;
                     $byteEnd = $byteStart + strlen($url);
                     
-                    // Validate URL
                     if (filter_var($url, FILTER_VALIDATE_URL)) {
-                        // Create URL facet
                         $facets[] = [
                             'index' => [
                                 'byteStart' => $byteStart,
@@ -218,8 +195,7 @@ class BlueskyService extends AbstractService
                 }
             }
             
-            // Update byte position for next line
-            $currentBytePosition += strlen($line) + 1; // +1 for the newline
+            $currentBytePosition += strlen($line) + 1;
         }
         
         return $facets;
@@ -229,25 +205,20 @@ class BlueskyService extends AbstractService
      * Extract hashtags from content and create facets for Bluesky
      * 
      * @param string $content The content to extract hashtags from
-     * @return array Array of facets for Bluesky
+     * @return array Array of hashtag facets for Bluesky
      */
     protected function extractHashtagFacets(string $content): array
     {
         $facets = [];
         
-        // Regular expression to match hashtags
-        // Match #word pattern, allowing alphanumeric characters and underscores
-        // The hashtag can't be part of a larger word, so we check for word boundaries
         if (preg_match_all('/(?<=\s|^|\n)(#([a-zA-Z0-9_]+))/u', $content, $matches, PREG_OFFSET_CAPTURE)) {
             foreach ($matches[1] as $index => $match) {
-                $fullTag = $match[0]; // The full hashtag including #
-                $position = $match[1]; // The byte position in the content
-                $tagName = $matches[2][$index][0]; // Just the tag name without #
+                $fullTag = $match[0];
+                $position = $match[1];
+                $tagName = $matches[2][$index][0];
                 
-                // Get the byte length of the full hashtag
                 $byteLength = strlen($fullTag);
                 
-                // Add the facet with proper byte positions
                 $facets[] = [
                     'index' => [
                         'byteStart' => $position,
@@ -280,7 +251,6 @@ class BlueskyService extends AbstractService
         
         foreach ($images as $image) {
             try {
-                // Get image file with proper size
                 $useOriginal = $this->config->option('use_original_image_size', false);
                 $preset = $this->config->option('image_preset', '1800w');
                 
@@ -294,35 +264,29 @@ class BlueskyService extends AbstractService
                 
                 $imagePath = $imageFile->root();
                 
-                // Validate image file exists and is readable
                 if (!file_exists($imagePath) || !is_readable($imagePath)) {
                     error_log('POSSE Plugin: Image file not accessible: ' . $imagePath);
                     continue;
                 }
                 
-                // Get file info
                 $fileInfo = new \finfo(FILEINFO_MIME_TYPE);
                 $mimeType = $fileInfo->file($imagePath);
                 
-                // Validate mime type
                 if (!in_array($mimeType, ['image/jpeg', 'image/png', 'image/gif', 'image/webp'])) {
                     error_log('POSSE Plugin: Unsupported image type: ' . $mimeType);
                     continue;
                 }
                 
-                // Get alt text
                 $altText = ($image->alt()->exists() && $image->alt()->isNotEmpty())
                     ? $image->alt()->value()
                     : $page->title()->value();
                 
-                // Read image data
                 $imageData = file_get_contents($imagePath);
                 if ($imageData === false) {
                     error_log('POSSE Plugin: Failed to read image file: ' . $imagePath);
                     continue;
                 }
                 
-                // Upload image
                 $response = $bluesky->request('POST', 'com.atproto.repo.uploadBlob', [], $imageData, $mimeType);
                 
                 if (isset($response->blob)) {
@@ -343,6 +307,9 @@ class BlueskyService extends AbstractService
 
     /**
      * Sanitize content for Bluesky
+     * 
+     * @param string $content The content to sanitize
+     * @return string Sanitized content
      */
     protected function sanitizeContent(string $content): string
     {
