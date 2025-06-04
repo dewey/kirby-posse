@@ -142,20 +142,22 @@ Replace USERNAME and PASSWORD with your Kirby panel credentials.
 
 ## Post Templates
 
-The post template supports these placeholders:
+The plugin supports both global and service-specific snippets for formatting posts. The available variables are documented in the default template snippet.
 
-- `{{title}}` - The post title
-- `{{url}}` - The URL to your post
-- `{{tags}}` - Hashtags generated from the post's tags
+### Snippet Locations
 
-Example template:
-```
-{{title}}
+Snippets can be defined in two ways:
 
-{{url}}
+1. **Default Snippet** (Plugin-provided)
+   - Located in the plugin's snippets directory
+   - Used as a fallback when no service-specific snippet exists
 
-{{tags}}
-```
+2. **Service-Specific Snippets**
+   - Located in `/site/snippets/posse/`
+   - Named after the service (e.g., `mastodon.php`, `bluesky.php`)
+   - Override the default snippet for specific services
+
+For more information about Kirby snippets, see the [official documentation](https://getkirby.com/docs/guide/templates/snippets).
 
 ## License
 

@@ -42,7 +42,6 @@ export default {
       formData: {
         contenttypes: '',
         syndication_delay: 60,
-        template: '{{title}}\n\n{{url}}\n\n{{tags}}',
         auth_enabled: false,
         auth_token: '',
         mastodon_enabled: false,
@@ -79,17 +78,9 @@ export default {
         },
         template: {
           label: 'Post Template',
-          type: 'textarea',
-          help: 'Use placeholders: {{title}}, {{url}}, {{date}}, {{tags}}',
-          width: '2/3',
-          buttons: [
-            {
-              name: 'preset',
-              icon: 'template',
-              text: 'Insert Default Template',
-              click: this.insertDefaultTemplate
-            }
-          ]
+          type: 'info',
+          text: 'The default template that defines how a post is structured on a service is defined in the plugin\'s snippets. You can customize it by creating your own snippets in your site\'s snippets directory. Currently supported services are:<br><br><strong>Mastodon:</strong> <code>snippets/posse/mastodon.php</code><br><strong>Bluesky:</strong> <code>snippets/posse/bluesky.php</code><br><br>If no service-specific snippet is found, it will fall back to the plugin provided default template. See the <a href="https://getkirby.com/docs/guide/templates/snippets" target="_blank">Kirby documentation</a> for more information about snippets.',
+          width: '2/3'
         },
 
         // Image Settings
@@ -303,7 +294,7 @@ export default {
           when: {
             bluesky_enabled: true
           }
-        }
+        },
       }
     };
   },
@@ -334,7 +325,6 @@ export default {
         this.formData = {
           contenttypes: this.mapContentTypes(data.contenttypes),
           syndication_delay: data.syndication_delay || 60,
-          template: data.template || '{{title}}\n\n{{url}}\n\n{{tags}}',
           auth_enabled: data.auth?.enabled || false,
           auth_token: data.auth?.token || '',
           
@@ -403,7 +393,6 @@ export default {
           },
           contenttypes: this.parseContentTypes(this.formData.contenttypes),
           syndication_delay: parseInt(this.formData.syndication_delay) || 60,
-          template: this.formData.template,
           use_original_image_size: this.formData.use_original_image_size,
           image_preset: this.formData.image_preset,
           auth: {

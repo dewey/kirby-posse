@@ -178,19 +178,14 @@ class Posse
     /**
      * Process a template with page content
      */
-    public function processTemplate(Page $page, string $template)
+    protected function processTemplate(Page $page, ?string $service = null): string
     {
-        // Get the template from config if not provided
-        if (empty($template)) {
-            $template = $this->config->option('template', '{{title}} {{url}}');
-        }
-        
-        
-        // Basic replacements
-        $replacements = [
-            '{{title}}' => $page->title()->value(),
-            '{{url}}' => $page->url(),
-            '{{date}}' => $page->date()->exists() ? $page->date()->toDate('Y-m-d') : date('Y-m-d')
+        // Prepare variables for the snippet
+        $data = [
+            'page' => $page,
+            'title' => $page->title()->value(),
+            'url' => $page->url(),
+            'date' => $page->date()->exists() ? $page->date()->toDate('Y-m-d') : date('Y-m-d')
         ];
         
         // Add tags if available
@@ -202,20 +197,55 @@ class Posse
                 return '#' . $tag;
             }, $tags);
             
-            $replacements['{{tags}}'] = implode(' ', $hashTags);
+            $data['tags'] = $hashTags;
         } else {
-            $replacements['{{tags}}'] = '';
+            $data['tags'] = [];
         }
         
-        // Replace all placeholders
-        $content = str_replace(array_keys($replacements), array_values($replacements), $template);
+        // Try to load service-specific snippet first
+        if ($service) {
+            $snippetPath = 'posse/' . $service;
+            $snippet = snippet($snippetPath, $data, true);
+            if ($snippet) {
+                return $this->normalizeNewlines($snippet);
+            }
+        }
         
-        // Clean up extra newlines from empty placeholders
-        $content = preg_replace("/\n{3,}/", "\n\n", $content);
-        $content = trim($content);
+        // Fall back to default snippet
+        $defaultSnippet = snippet('posse/default', $data, true);
         
+        if (!$defaultSnippet) {
+            throw new \Exception('No template found for POSSE syndication. Neither service-specific nor default template could be loaded.');
+        }
         
-        return $content;
+        return $this->normalizeNewlines($defaultSnippet);
+    }
+    
+    /**
+     * Normalize newlines in content
+     * 
+     * @param string $content The content to normalize
+     * @return string Normalized content
+     */
+    protected function normalizeNewlines(string $content): string
+    {
+        // First convert any literal \n strings to actual newlines
+        $content = str_replace('\n', "\n", $content);
+        
+        // Then convert any double-escaped newlines
+        $content = str_replace('\\n', "\n", $content);
+        
+        // Normalize line endings to \n
+        $content = str_replace(["\r\n", "\r"], "\n", $content);
+        
+        // Remove excessive line breaks (more than 2 consecutive)
+        $content = preg_replace('/\n{3,}/', "\n\n", $content);
+        
+        // Ensure double line breaks between sections, but preserve actual newlines
+        $content = preg_replace('/([^\n])\n([^\n])/', "$1\n\n$2", $content);
+        
+        // Trim whitespace while preserving internal line breaks
+        return trim($content);
     }
     
     /**
@@ -254,12 +284,12 @@ class Posse
         
         // Get the page using UUID - will throw an exception if not found
         $page = \Kirby\Uuid\Uuid::for('page://' . $item->page_uuid)->model();
+        error_log('POSSE Plugin: Syndicating page: ' . $page->title()->value());
+        error_log('POSSE Plugin: Service: ' . $item->service);
         
-        // Get the template from config
-        $template = $this->config->option('template', '{{title}} {{url}} {{tags}}');
-        
-        // Process the template
-        $content = $this->processTemplate($page, $template);
+        // Process the template using the service name
+        $content = $this->processTemplate($page, $item->service);
+        error_log('POSSE Plugin: Processed content: ' . $content);
         
         // Get the service configuration
         $serviceConfig = $this->config->option('services', [])[$item->service] ?? null;

@@ -27,5 +27,8 @@ Kirby::plugin('notmyhostname/posse', [
     'hooks'        => require_once __DIR__ . '/src/extensions/hooks.php',
     'routes'       => require_once __DIR__ . '/src/extensions/routes.php',
     'options'      => require_once __DIR__ . '/src/extensions/options.php',
-    'api'          => require_once __DIR__ . '/src/extensions/api.php'
+    'api'          => require_once __DIR__ . '/src/extensions/api.php',
+    'snippets'     => [
+        'posse/default' => __DIR__ . '/snippets/posse/default.php'
+    ]
 ]);
