@@ -90,6 +90,17 @@ export default {
           width: '1/1',
           help: 'Control how images are processed before being uploaded to social media platforms.'
         },
+        image_settings_info: {
+          type: 'info',
+          text: 'If the image size exceeds the service\'s limit (e.g., Bluesky\'s 976.56KB limit), the plugin will automatically try progressively smaller presets. If no presets are defined in Kirby\'s config, it will fall back to WebP format with 1000px width and 90% quality. <a href="https://getkirby.com/docs/guide/files/resize-images-on-the-fly#presets" target="_blank">Configure this list</a> in your Kirby config.',
+          width: '2/3'
+        },
+        image_settings_spacer: {
+          type: 'info',
+          text: ' ',
+          theme: 'none',
+          width: '1/3'
+        },
         use_original_image_size: {
           label: 'Use original image size',
           type: 'toggle',
@@ -101,17 +112,10 @@ export default {
           label: 'Image size preset',
           type: 'select',
           width: '1/3',
-          help: 'Select a preset for image resizing. Width options maintain aspect ratio, while Square options crop to an exact square. If the image size exceeds the service\'s limit (e.g., Bluesky\'s 976.56KB limit), the plugin will automatically try progressively smaller presets. If no presets are defined in Kirby\'s config, it will fall back to WebP format with 1000px width and 90% quality. <a href="https://getkirby.com/docs/guide/files/resize-images-on-the-fly#presets" target="_blank">Configure this list</a> in your Kirby config.',
+          help: 'Select a preset for image resizing. Width options maintain aspect ratio, while Square options crop to an exact square.',
           options: [],  // Will be populated dynamically from API response
           default: '1800w',
           when: { use_original_image_size: false }
-        },
-        image_settings_spacer: {
-          type: 'info',
-          text: ' ',
-          theme: 'none',
-          width: '1/3',
-          when: { use_original_image_size: true }
         },
 
         // Automated Syndication
