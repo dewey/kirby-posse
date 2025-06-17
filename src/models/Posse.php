@@ -6,6 +6,7 @@ use Kirby\Cms\Page;
 use Kirby\Data\Yaml;
 use Notmyhostname\Posse\Models\Services\MastodonService;
 use Notmyhostname\Posse\Models\Services\BlueskyService;
+use Notmyhostname\Posse\Models\Services\NostrService;
 
 class Posse
 {
@@ -309,6 +310,10 @@ class Posse
                 
             case 'bluesky':
                 $service = new BlueskyService($this->db, $this->config);
+                return $service->syndicate($item, $page, $content);
+                
+            case 'nostr':
+                $service = new NostrService($this->db, $this->config);
                 return $service->syndicate($item, $page, $content);
                 
             default:

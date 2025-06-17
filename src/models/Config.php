@@ -27,6 +27,18 @@ class Config
                 'instance_url' => '',
                 'api_token' => '',
                 'image_limit' => 4
+            ],
+            'nostr' => [
+                'enabled' => false,
+                'private_key' => '',
+                'relay_urls' => [
+                    'wss://relay.damus.io',
+                    'wss://nostr.wine',
+                    'wss://relay.orangepill.dev',
+                    'wss://xmr.usenostr.org',
+                    'wss://nostr.portemonero.com'
+                ],
+                'frontend_url' => 'https://primal.net/e/'
             ]
         ],
         'use_original_image_size' => false,

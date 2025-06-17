@@ -53,6 +53,9 @@ export default defineComponent({
         bluesky_instance_url: '',
         bluesky_api_token: '',
         bluesky_image_limit: 4,
+        nostr_enabled: false,
+        nostr_private_key: '',
+        nostr_relay_urls: 'wss://relay.damus.io, wss://nostr.wine, wss://relay.orangepill.dev, wss://xmr.usenostr.org, wss://nostr.portemonero.com',
         use_original_image_size: false,
         image_preset: '1800w',
       },
@@ -300,6 +303,37 @@ export default defineComponent({
             bluesky_enabled: true
           }
         },
+
+        // Nostr Settings
+        nostr_headline: {
+          label: 'Nostr',
+          type: 'headline',
+          width: '1/1'
+        },
+        nostr_enabled: {
+          label: 'Enable Nostr',
+          type: 'toggle',
+          text: ['Disabled', 'Enabled'],
+          width: '1/6'
+        },
+        nostr_private_key: {
+          label: 'Private Key',
+          type: 'text',
+          width: '1/2',
+          help: 'Your Nostr private key (nsec...)',
+          when: {
+            nostr_enabled: true
+          }
+        },
+        nostr_relay_urls: {
+          label: 'Relay URLs',
+          type: 'text',
+          width: '1/2',
+          help: 'Comma-separated list of Nostr relay URLs (e.g., wss://relay.damus.io,wss://relay.nostr.band)',
+          when: {
+            nostr_enabled: true
+          }
+        },
       }
     };
   },
@@ -344,6 +378,14 @@ export default defineComponent({
           bluesky_instance_url: data.services?.bluesky?.instance_url || '',
           bluesky_api_token: data.services?.bluesky?.api_token || '',
           bluesky_image_limit: data.services?.bluesky?.image_limit || 4,
+
+          // Nostr settings
+          nostr_enabled: data.services?.nostr?.enabled || false,
+          nostr_private_key: data.services?.nostr?.private_key || '',
+          nostr_relay_urls: Array.isArray(data.services?.nostr?.relay_urls)
+            ? data.services?.nostr?.relay_urls.join(', ')
+            : data.services?.nostr?.relay_urls || 'wss://relay.damus.io, wss://nostr.wine, wss://relay.orangepill.dev, wss://xmr.usenostr.org, wss://nostr.portemonero.com',
+
           use_original_image_size: data.use_original_image_size ?? false,
           image_preset: data.image_preset ?? '1800w',
         };
@@ -394,6 +436,11 @@ export default defineComponent({
               instance_url: this.formData.bluesky_instance_url,
               api_token: this.formData.bluesky_api_token,
               image_limit: parseInt(this.formData.bluesky_image_limit) || 4
+            },
+            nostr: {
+              enabled: this.formData.nostr_enabled,
+              private_key: this.formData.nostr_private_key,
+              relay_urls: this.formData.nostr_relay_urls.split(',').map(url => url.trim()),
             }
           },
           contenttypes: this.parseContentTypes(this.formData.contenttypes),

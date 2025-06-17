@@ -21,6 +21,7 @@ load([
     // Service Implementations
     'Notmyhostname\\Posse\\Models\\Services\\MastodonService' => $dir . '/Services/MastodonService.php',
     'Notmyhostname\\Posse\\Models\\Services\\BlueskyService'  => $dir . '/Services/BlueskyService.php',
+    'Notmyhostname\\Posse\\Models\\Services\\NostrService'    => $dir . '/Services/NostrService.php',
 
     // Middleware
     'Notmyhostname\\Posse\\Middleware\\Auth'   => $middlewareDir . '/auth.php',
