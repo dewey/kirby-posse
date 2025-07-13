@@ -7,7 +7,7 @@
  */
 
 return [
-    'posse' => function () {
+    'posse' => function ($kirby) {
         return [
             'label' => 'POSSE',
             'icon' => 'share',

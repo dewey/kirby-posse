@@ -1,34 +1,35 @@
 <template>
-  <k-inside>
-    <k-view class="posse-view">
-      <k-header>
-        POSSE Settings
-        <k-button-group slot="buttons">
-          <k-button icon="check" @click="saveSettings">Save</k-button>
-        </k-button-group>
-      </k-header>
+  <k-inside class="posse-view">
+    <k-header>
+      POSSE Settings
+      <k-button-group slot="buttons">
+        <k-button icon="save" @click="saveSettings">Save</k-button>
+      </k-button-group>
+    </k-header>
 
-      <k-grid style="gap: 2.5rem">
-        <k-column width="1/1">
-          <div v-if="loading">
-            <k-text>Loading settings...</k-text>
-          </div>
+    <k-grid style="gap: 2.5rem">
+      <k-column width="1/1">
+        <div v-if="loading">
+          <k-text>Loading settings...</k-text>
+        </div>
 
-          <div v-else class="posse-settings-content">
-            <k-form
-              :fields="formFields"
-              v-model="formData"
-              @submit="saveSettings"
-            />
-          </div>
-        </k-column>
-      </k-grid>
-    </k-view>
+        <div v-else class="posse-settings-content">
+          <k-form
+            :fields="formFields"
+            v-model="formData"
+            @submit="saveSettings"
+          />
+        </div>
+      </k-column>
+    </k-grid>
   </k-inside>
 </template>
 
 <script>
-export default {
+import { defineComponent } from 'vue';
+
+export default defineComponent({
+  name: 'PosseSettings',
   props: {
     csrf: {
       type: String,
@@ -472,5 +473,5 @@ export default {
       return result;
     }
   }
-};
+});
 </script>

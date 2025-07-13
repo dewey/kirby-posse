@@ -1,91 +1,91 @@
 <template>
-  <k-inside>
-    <k-view class="posse-view">
-      <k-header>
-        POSSE Queue
-        <k-button-group slot="buttons">
-          <k-button icon="add" @click="openAddDialog">Add to Queue</k-button>
-          <k-button icon="settings" @click="siteSettings">Settings</k-button>
-        </k-button-group>
-      </k-header>
+  <k-inside class="posse-view">
+    <k-header>
+      POSSE Queue
+      <k-button-group slot="buttons">
+        <k-button icon="add" @click="openAddDialog">Add to Queue</k-button>
+        <k-button icon="settings" @click="siteSettings">Settings</k-button>
+      </k-button-group>
+    </k-header>
 
-      <k-grid style="gap: 2.5rem">
-        <k-column width="1/1">
-          <div v-if="loading">
-            <k-text>Loading syndication queue...</k-text>
-          </div>
-
-          <!-- Queue Table -->
-          <custom-table
-            :items="pendingItems"
-            :posts="posts"
-            :loading="loading"
-            :postsLoading="postsLoading"
-            :error="error"
-            :syndicatingItems="syndicatingItems"
-            @toggle-ignored="toggleIgnored"
-            @add-to-queue="openAddDialog"
-            @syndicate-now="syndicateNow"
-            @go-to-settings="siteSettings"
-          />
-
-          <!-- History Table -->
-          <history-table
-            :items="syndicatedItems"
-            :loading="loading"
-            :error="error"
-            @unignore="unignoreItem"
-          />
-        </k-column>
-      </k-grid>
-
-      <!-- Add to Queue Dialog -->
-      <k-dialog
-        ref="addDialog"
-        @submit="submitAddDialog"
-        @cancel="cancelAddDialog"
-      >
-        <!-- When there are no enabled services, show help text instead of form -->
-        <div v-if="!hasEnabledServices">
-          <p class="k-text">
-            No syndication services are enabled. You need to enable at least one service in the settings.
-          </p>
-          <k-button @click="goToSettings" icon="settings">Go to Settings</k-button>
+    <k-grid style="gap: 2.5rem">
+      <k-column width="1/1">
+        <div v-if="loading">
+          <k-text>Loading syndication queue...</k-text>
         </div>
-        <!-- When services are enabled but no posts are available -->
-        <p v-else-if="posts.length === 0" class="k-text">
-          No eligible posts found. All posts have already been syndicated to all enabled services.
-        </p>
-        <!-- Normal form with both services and posts available -->
-        <k-form
-          v-else
-          :fields="addDialogFields"
-          v-model="addDialogData"
-          @submit="submitAddDialog"
-        />
-      </k-dialog>
 
-      <!-- Syndicated URL Dialog -->
-      <k-dialog
-        ref="urlDialog"
-        @submit="submitUrlDialog"
-        @cancel="cancelUrlDialog"
-      >
-        <k-form
-          :fields="urlDialogFields"
-          v-model="urlDialogData"
-          @submit="submitUrlDialog"
+        <!-- Queue Table -->
+        <custom-table
+          :items="pendingItems"
+          :posts="posts"
+          :loading="loading"
+          :postsLoading="postsLoading"
+          :error="error"
+          :syndicatingItems="syndicatingItems"
+          @toggle-ignored="toggleIgnored"
+          @add-to-queue="openAddDialog"
+          @syndicate-now="syndicateNow"
+          @go-to-settings="siteSettings"
         />
-      </k-dialog>
-    </k-view>
+
+        <!-- History Table -->
+        <history-table
+          :items="syndicatedItems"
+          :loading="loading"
+          :error="error"
+          @unignore="unignoreItem"
+        />
+      </k-column>
+    </k-grid>
+
+    <!-- Add to Queue Dialog -->
+    <k-dialog
+      ref="addDialog"
+      @submit="submitAddDialog"
+      @cancel="cancelAddDialog"
+    >
+      <!-- When there are no enabled services, show help text instead of form -->
+      <div v-if="!hasEnabledServices">
+        <p class="k-text">
+          No syndication services are enabled. You need to enable at least one service in the settings.
+        </p>
+        <k-button @click="goToSettings" icon="settings">Go to Settings</k-button>
+      </div>
+      <!-- When services are enabled but no posts are available -->
+      <p v-else-if="posts.length === 0" class="k-text">
+        No eligible posts found. All posts have already been syndicated to all enabled services.
+      </p>
+      <!-- Normal form with both services and posts available -->
+      <k-form
+        v-else
+        :fields="addDialogFields"
+        v-model="addDialogData"
+        @submit="submitAddDialog"
+      />
+    </k-dialog>
+
+    <!-- Syndicated URL Dialog -->
+    <k-dialog
+      ref="urlDialog"
+      @submit="submitUrlDialog"
+      @cancel="cancelUrlDialog"
+    >
+      <k-form
+        :fields="urlDialogFields"
+        v-model="urlDialogData"
+        @submit="submitUrlDialog"
+      />
+    </k-dialog>
   </k-inside>
 </template>
 
 <script>
+import { defineComponent } from 'vue';
 import CustomTable from './CustomTable.vue';
 import HistoryTable from './HistoryTable.vue';
 
-export default {
+export default defineComponent({
+  name: 'PosseView',
   components: {
     CustomTable,
     HistoryTable
@@ -793,5 +793,5 @@ export default {
       }
     }
   }
-};
+});
 </script>

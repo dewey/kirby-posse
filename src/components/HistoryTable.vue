@@ -169,7 +169,10 @@
 </template>
 
 <script>
-export default {
+import { defineComponent } from 'vue';
+
+export default defineComponent({
+  name: 'HistoryTable',
   props: {
     items: {
       type: Array,
@@ -184,6 +187,7 @@ export default {
       default: null
     }
   },
+  emits: ['unignore'],
   computed: {
     // Filter items to include ALL syndicated items and ALL ignored items
     filteredItems() {
@@ -226,7 +230,7 @@ export default {
       return `${year}-${month}-${day} ${hours}:${minutes}`;
     },
   }
-};
+});
 </script>
 
 <style>
