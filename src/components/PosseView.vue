@@ -1,5 +1,5 @@
 <template>
-  <k-inside class="posse-view">
+  <k-panel-inside class="posse-view">
     <k-header>
       POSSE Queue
       <k-button-group slot="buttons">
@@ -76,7 +76,7 @@
         @submit="submitUrlDialog"
       />
     </k-dialog>
-  </k-inside>
+  </k-panel-inside>
 </template>
 
 <script>

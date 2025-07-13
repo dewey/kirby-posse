@@ -1,5 +1,5 @@
 <template>
-  <k-inside class="posse-view">
+  <k-panel-inside class="posse-view">
     <k-header>
       POSSE Settings
       <k-button-group slot="buttons">
@@ -22,7 +22,7 @@
         </div>
       </k-column>
     </k-grid>
-  </k-inside>
+  </k-panel-inside>
 </template>
 
 <script>
