@@ -372,7 +372,7 @@ export default defineComponent({
         }
       } catch (error) {
         console.error("Error loading settings:", error);
-        this.$store.dispatch("notification/error", "Failed to load settings");
+        this.$panel.notification.error("Failed to load settings");
       } finally {
         this.loading = false;
       }
@@ -426,10 +426,10 @@ export default defineComponent({
         }
         
         // Show success message
-        this.$store.dispatch("notification/success", "Settings saved successfully");
+        this.$panel.notification.success("Settings saved successfully");
       } catch (error) {
         console.error("Error saving settings:", error);
-        this.$store.dispatch("notification/error", error.message);
+        this.$panel.notification.error(error.message);
       }
     },
     

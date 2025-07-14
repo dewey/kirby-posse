@@ -410,7 +410,7 @@ export default defineComponent({
         }
       } catch (error) {
         console.error("Error fetching posts:", error);
-        this.$store.dispatch("notification/error", "Failed to load posts");
+        this.$panel.notification.error("Failed to load posts");
       } finally {
         this.postsLoading = false;
       }
@@ -489,7 +489,7 @@ export default defineComponent({
       const services = this.addDialogData.service;
 
       if (!pageId || !services || !services.length) {
-        this.$store.dispatch("notification/error", "Missing required values");
+        this.$panel.notification.error("Missing required values");
         return false;
       }
 
@@ -528,7 +528,7 @@ export default defineComponent({
         
         // Show success message with the number of services
         const servicesText = services.length > 1 ? `${services.length} services` : "service";
-        this.$store.dispatch("notification/success", `Post added to syndication queue for ${servicesText}`);
+        this.$panel.notification.success(`Post added to syndication queue for ${servicesText}`);
         
         // Refresh the queue
         this.fetchQueue();
@@ -542,7 +542,7 @@ export default defineComponent({
         // Detailed error handling
         let errorMessage = error.message || "Unknown error";
 
-        this.$store.dispatch("notification/error", "Failed to add to queue: " + errorMessage);
+        this.$panel.notification.error("Failed to add to queue: " + errorMessage);
         return false;
       }
     },
@@ -576,7 +576,7 @@ export default defineComponent({
       try {
         // Validate URL
         if (!this.urlDialogData.syndicated_url) {
-          this.$store.dispatch("notification/error", "URL is required");
+          this.$panel.notification.error("URL is required");
           return false;
         }
 
@@ -610,7 +610,7 @@ export default defineComponent({
         return true;
       } catch (error) {
         console.error("Error marking as syndicated:", error);
-        this.$store.dispatch("notification/error", "Failed to mark as syndicated: " + error.message);
+        this.$panel.notification.error("Failed to mark as syndicated: " + error.message);
         return false;
       }
     },
@@ -673,13 +673,13 @@ export default defineComponent({
       .then(response => response.json())
       .then(data => {
         // Show success message
-        this.$store.dispatch('notification/success', 'Added to ignore list');
+        this.$panel.notification.success('Added to ignore list');
         // Refresh the queue
         this.fetchQueue();
       })
       .catch(error => {
         console.error('Error ignoring item:', error);
-        this.$store.dispatch('notification/error', 'Failed to ignore item');
+        this.$panel.notification.error('Failed to ignore item');
       })
       .finally(() => {
         // Remove from processing array
@@ -723,17 +723,17 @@ export default defineComponent({
           await this.markSyndicated(item, data.syndicated_url);
           
           // Show success message
-          this.$store.dispatch("notification/success", "Successfully syndicated to " + item.service);
+          this.$panel.notification.success("Successfully syndicated to " + item.service);
         } else {
           // Just show success message
-          this.$store.dispatch("notification/success", "Post has been syndicated");
+          this.$panel.notification.success("Post has been syndicated");
         }
         
         // Refresh the queue
         this.fetchQueue();
       } catch (error) {
         console.error("Error syndicating now:", error);
-        this.$store.dispatch("notification/error", "Failed to syndicate: " + error.message);
+        this.$panel.notification.error("Failed to syndicate: " + error.message);
       } finally {
         // Remove item from syndicating items
         const index = this.syndicatingItems.indexOf(item.id);
@@ -777,13 +777,13 @@ export default defineComponent({
         }
         
         // Show success message
-        this.$store.dispatch('notification/success', 'Item added back to queue');
+        this.$panel.notification.success('Item added back to queue');
         
         // Refresh the queue to update UI
         this.fetchQueue();
       } catch (error) {
         console.error('Error unignoring item:', error);
-        this.$store.dispatch('notification/error', 'Failed to unignore item: ' + error.message);
+        this.$panel.notification.error('Failed to unignore item: ' + error.message);
       } finally {
         // Remove from processing array
         const index = this.syndicatingItems.indexOf(item.id);
