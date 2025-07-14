@@ -7,6 +7,9 @@
     "dev": "kirbyup src/index.js --watch",
     "build": "kirbyup src/index.js"
   },
+  "require": {
+    "getkirby/cms": "^5.0"
+  },
   "devDependencies": {
     "autoprefixer": "^10.4.21",
     "kirbyup": "^3.3.0",

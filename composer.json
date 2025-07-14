@@ -12,6 +12,7 @@
         }
     ],
     "require": {
+        "getkirby/cms": "^5.0",
         "getkirby/composer-installer": "^1.1",
         "cjrasmussen/bluesky-api": "^2.3"
     },
