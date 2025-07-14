@@ -192,7 +192,10 @@
 </template>
 
 <script>
-export default {
+import { defineComponent } from 'vue';
+
+export default defineComponent({
+  name: 'CustomTable',
   props: {
     items: {
       type: Array,
@@ -219,6 +222,7 @@ export default {
       default: () => []
     }
   },
+  emits: ['toggle-ignored', 'add-to-queue', 'syndicate-now', 'go-to-settings'],
   methods: {
     formatService(service) {
       if (!service) return '';
@@ -329,7 +333,7 @@ export default {
              this.syndicatingItems.some(id => id === item.id || id === Number(item.id) || String(id) === String(item.id));
     }
   }
-};
+});
 </script>
 
 <style>

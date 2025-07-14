@@ -1,91 +1,91 @@
 <template>
-  <k-inside>
-    <k-view class="posse-view">
-      <k-header>
-        POSSE Queue
-        <k-button-group slot="buttons">
-          <k-button icon="add" @click="openAddDialog">Add to Queue</k-button>
-          <k-button icon="settings" @click="siteSettings">Settings</k-button>
-        </k-button-group>
-      </k-header>
+  <k-panel-inside class="posse-view">
+    <k-header>
+      POSSE Queue
+      <k-button-group slot="buttons">
+        <k-button icon="add" @click="openAddDialog">Add to Queue</k-button>
+        <k-button icon="settings" @click="siteSettings">Settings</k-button>
+      </k-button-group>
+    </k-header>
 
-      <k-grid style="gap: 2.5rem">
-        <k-column width="1/1">
-          <div v-if="loading">
-            <k-text>Loading syndication queue...</k-text>
-          </div>
-
-          <!-- Queue Table -->
-          <custom-table
-            :items="pendingItems"
-            :posts="posts"
-            :loading="loading"
-            :postsLoading="postsLoading"
-            :error="error"
-            :syndicatingItems="syndicatingItems"
-            @toggle-ignored="toggleIgnored"
-            @add-to-queue="openAddDialog"
-            @syndicate-now="syndicateNow"
-            @go-to-settings="siteSettings"
-          />
-
-          <!-- History Table -->
-          <history-table
-            :items="syndicatedItems"
-            :loading="loading"
-            :error="error"
-            @unignore="unignoreItem"
-          />
-        </k-column>
-      </k-grid>
-
-      <!-- Add to Queue Dialog -->
-      <k-dialog
-        ref="addDialog"
-        @submit="submitAddDialog"
-        @cancel="cancelAddDialog"
-      >
-        <!-- When there are no enabled services, show help text instead of form -->
-        <div v-if="!hasEnabledServices">
-          <p class="k-text">
-            No syndication services are enabled. You need to enable at least one service in the settings.
-          </p>
-          <k-button @click="goToSettings" icon="settings">Go to Settings</k-button>
+    <k-grid style="gap: 2.5rem">
+      <k-column width="1/1">
+        <div v-if="loading">
+          <k-text>Loading syndication queue...</k-text>
         </div>
-        <!-- When services are enabled but no posts are available -->
-        <p v-else-if="posts.length === 0" class="k-text">
-          No eligible posts found. All posts have already been syndicated to all enabled services.
-        </p>
-        <!-- Normal form with both services and posts available -->
-        <k-form
-          v-else
-          :fields="addDialogFields"
-          v-model="addDialogData"
-          @submit="submitAddDialog"
-        />
-      </k-dialog>
 
-      <!-- Syndicated URL Dialog -->
-      <k-dialog
-        ref="urlDialog"
-        @submit="submitUrlDialog"
-        @cancel="cancelUrlDialog"
-      >
-        <k-form
-          :fields="urlDialogFields"
-          v-model="urlDialogData"
-          @submit="submitUrlDialog"
+        <!-- Queue Table -->
+        <custom-table
+          :items="pendingItems"
+          :posts="posts"
+          :loading="loading"
+          :postsLoading="postsLoading"
+          :error="error"
+          :syndicatingItems="syndicatingItems"
+          @toggle-ignored="toggleIgnored"
+          @add-to-queue="openAddDialog"
+          @syndicate-now="syndicateNow"
+          @go-to-settings="siteSettings"
         />
-      </k-dialog>
-    </k-view>
-  </k-inside>
+
+        <!-- History Table -->
+        <history-table
+          :items="syndicatedItems"
+          :loading="loading"
+          :error="error"
+          @unignore="unignoreItem"
+        />
+      </k-column>
+    </k-grid>
+
+    <!-- Add to Queue Dialog -->
+    <k-dialog
+      ref="addDialog"
+      @submit="submitAddDialog"
+      @cancel="cancelAddDialog"
+    >
+      <!-- When there are no enabled services, show help text instead of form -->
+      <div v-if="!hasEnabledServices">
+        <p class="k-text">
+          No syndication services are enabled. You need to enable at least one service in the settings.
+        </p>
+        <k-button @click="goToSettings" icon="settings">Go to Settings</k-button>
+      </div>
+      <!-- When services are enabled but no posts are available -->
+      <p v-else-if="posts.length === 0" class="k-text">
+        No eligible posts found. All posts have already been syndicated to all enabled services.
+      </p>
+      <!-- Normal form with both services and posts available -->
+      <k-form
+        v-else
+        :fields="addDialogFields"
+        v-model="addDialogData"
+        @submit="submitAddDialog"
+      />
+    </k-dialog>
+
+    <!-- Syndicated URL Dialog -->
+    <k-dialog
+      ref="urlDialog"
+      @submit="submitUrlDialog"
+      @cancel="cancelUrlDialog"
+    >
+      <k-form
+        :fields="urlDialogFields"
+        v-model="urlDialogData"
+        @submit="submitUrlDialog"
+      />
+    </k-dialog>
+  </k-panel-inside>
 </template>
 
 <script>
+import { defineComponent } from 'vue';
 import CustomTable from './CustomTable.vue';
 import HistoryTable from './HistoryTable.vue';
 
-export default {
+export default defineComponent({
+  name: 'PosseView',
   components: {
     CustomTable,
     HistoryTable
@@ -410,7 +410,7 @@ export default {
         }
       } catch (error) {
         console.error("Error fetching posts:", error);
-        this.$store.dispatch("notification/error", "Failed to load posts");
+        this.$panel.notification.error("Failed to load posts");
       } finally {
         this.postsLoading = false;
       }
@@ -489,7 +489,7 @@ export default {
       const services = this.addDialogData.service;
 
       if (!pageId || !services || !services.length) {
-        this.$store.dispatch("notification/error", "Missing required values");
+        this.$panel.notification.error("Missing required values");
         return false;
       }
 
@@ -528,7 +528,7 @@ export default {
         
         // Show success message with the number of services
         const servicesText = services.length > 1 ? `${services.length} services` : "service";
-        this.$store.dispatch("notification/success", `Post added to syndication queue for ${servicesText}`);
+        this.$panel.notification.success(`Post added to syndication queue for ${servicesText}`);
         
         // Refresh the queue
         this.fetchQueue();
@@ -542,7 +542,7 @@ export default {
         // Detailed error handling
         let errorMessage = error.message || "Unknown error";
 
-        this.$store.dispatch("notification/error", "Failed to add to queue: " + errorMessage);
+        this.$panel.notification.error("Failed to add to queue: " + errorMessage);
         return false;
       }
     },
@@ -576,7 +576,7 @@ export default {
       try {
         // Validate URL
         if (!this.urlDialogData.syndicated_url) {
-          this.$store.dispatch("notification/error", "URL is required");
+          this.$panel.notification.error("URL is required");
           return false;
         }
 
@@ -610,7 +610,7 @@ export default {
         return true;
       } catch (error) {
         console.error("Error marking as syndicated:", error);
-        this.$store.dispatch("notification/error", "Failed to mark as syndicated: " + error.message);
+        this.$panel.notification.error("Failed to mark as syndicated: " + error.message);
         return false;
       }
     },
@@ -673,13 +673,13 @@ export default {
       .then(response => response.json())
       .then(data => {
         // Show success message
-        this.$store.dispatch('notification/success', 'Added to ignore list');
+        this.$panel.notification.success('Added to ignore list');
         // Refresh the queue
         this.fetchQueue();
       })
       .catch(error => {
         console.error('Error ignoring item:', error);
-        this.$store.dispatch('notification/error', 'Failed to ignore item');
+        this.$panel.notification.error('Failed to ignore item');
       })
       .finally(() => {
         // Remove from processing array
@@ -723,17 +723,17 @@ export default {
           await this.markSyndicated(item, data.syndicated_url);
           
           // Show success message
-          this.$store.dispatch("notification/success", "Successfully syndicated to " + item.service);
+          this.$panel.notification.success("Successfully syndicated to " + item.service);
         } else {
           // Just show success message
-          this.$store.dispatch("notification/success", "Post has been syndicated");
+          this.$panel.notification.success("Post has been syndicated");
         }
         
         // Refresh the queue
         this.fetchQueue();
       } catch (error) {
         console.error("Error syndicating now:", error);
-        this.$store.dispatch("notification/error", "Failed to syndicate: " + error.message);
+        this.$panel.notification.error("Failed to syndicate: " + error.message);
       } finally {
         // Remove item from syndicating items
         const index = this.syndicatingItems.indexOf(item.id);
@@ -777,13 +777,13 @@ export default {
         }
         
         // Show success message
-        this.$store.dispatch('notification/success', 'Item added back to queue');
+        this.$panel.notification.success('Item added back to queue');
         
         // Refresh the queue to update UI
         this.fetchQueue();
       } catch (error) {
         console.error('Error unignoring item:', error);
-        this.$store.dispatch('notification/error', 'Failed to unignore item: ' + error.message);
+        this.$panel.notification.error('Failed to unignore item: ' + error.message);
       } finally {
         // Remove from processing array
         const index = this.syndicatingItems.indexOf(item.id);
@@ -793,5 +793,5 @@ export default {
       }
     }
   }
-};
+});
 </script>
