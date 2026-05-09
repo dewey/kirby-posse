@@ -98,8 +98,8 @@ class NostrService extends AbstractService implements ServiceInterface
             // Convert string to array if needed (in case it's comma-separated)
             if (is_string($relayUrls)) {
                 $relayUrls = array_map('trim', explode(',', $relayUrls));
-            } else {
-                $relayUrls = $relayUrls ? [$relayUrls] : null;
+            } elseif (!is_array($relayUrls)) {
+                $relayUrls = null;
             }
 
             if (empty($privateKey)) {
@@ -143,18 +143,22 @@ class NostrService extends AbstractService implements ServiceInterface
                 $preset = $this->config->option('image_preset', '1800w');
                 
                 if ($useOriginal) {
-                    $imageFile = $image; // Use original
+                    $imageFile = $image;
                 } else {
-                    // Use the getThumbPreset method to get the preset name
                     $presetName = $this->getThumbPreset($preset);
-                    if ($image->thumb($presetName)->exists()) {
-                        $imageFile = $image->thumb($presetName);
-                        $imageFile->save();
-                    }
+                    // Get preset options and force JPEG for Nostr client compatibility
+                    $presetOptions = kirby()->option('thumbs.presets.' . $presetName, ['width' => 1800]);
+                    $presetOptions['format'] = 'jpg';
+                    $thumb = $image->thumb($presetOptions);
+                    $imageFile = $thumb->exists() ? $thumb->save() : $image;
                 }
-                
-                // Get the URL of the processed image
+
+                // Get the URL of the processed image, normalizing to canonical URL if configured
                 $imageUrl = $imageFile->url();
+                $canonicalUrl = $this->config->option('canonical_url', '');
+                if (!empty($canonicalUrl)) {
+                    $imageUrl = str_replace(rtrim(site()->url(), '/'), rtrim($canonicalUrl, '/'), $imageUrl);
+                }
 
                 // Append image URL to content so clients render it inline
                 $event->setContent($event->getContent() . "\n\n" . $imageUrl);
@@ -196,17 +200,6 @@ class NostrService extends AbstractService implements ServiceInterface
                 error_log('POSSE Plugin: Added image to Nostr event: ' . $imageUrl);
             }
             
-            // Add tags for hashtags if the page has tags
-            if ($page->tags()->exists() && $page->tags()->isNotEmpty()) {
-                $pageTags = $page->tags()->split(',');
-                foreach ($pageTags as $tag) {
-                    $tag = trim($tag);
-                    if (!empty($tag)) {
-                        $event->addTag(['t', $tag]);
-                    }
-                }
-            }
-
             // Sign the event
             $sign = new Sign();
             @$sign->signEvent($event, $privateKey);
