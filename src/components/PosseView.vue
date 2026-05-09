@@ -291,7 +291,8 @@ export default defineComponent({
       if (enabledServices.length === 0) {
         return [
           { value: 'mastodon', text: 'Mastodon (disabled in settings)' },
-          { value: 'bluesky', text: 'Bluesky (disabled in settings)' }
+          { value: 'bluesky', text: 'Bluesky (disabled in settings)' },
+          { value: 'nostr', text: 'Nostr (disabled in settings)' }
         ];
       }
       

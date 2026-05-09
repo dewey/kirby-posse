@@ -7,7 +7,7 @@
  */
 
 return [
-    'services' => ['mastodon', 'bluesky'],
+    'services' => ['mastodon', 'bluesky', 'nostr'],
     'auth' => [
         'token' => null, // API token for authentication
     ],

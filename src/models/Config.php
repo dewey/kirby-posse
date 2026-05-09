@@ -27,6 +27,18 @@ class Config
                 'instance_url' => '',
                 'api_token' => '',
                 'image_limit' => 4
+            ],
+            'nostr' => [
+                'enabled' => false,
+                'private_key' => '',
+                'relay_urls' => [
+                    'wss://relay.damus.io',
+                    'wss://nostr.wine',
+                    'wss://relay.orangepill.dev',
+                    'wss://xmr.usenostr.org',
+                    'wss://nostr.portemonero.com'
+                ],
+                'frontend_url' => 'https://primal.net/e/'
             ]
         ],
         'use_original_image_size' => false,
@@ -47,25 +59,20 @@ class Config
     public function load()
     {
         try {
-            // Read the YAML file
             if (file_exists($this->configFile)) {
                 $yamlConfig = Yaml::read($this->configFile);
-                
-                // Merge with defaults to ensure all required fields exist
                 $this->config = $this->mergeConfig($this->defaults, $yamlConfig ?: []);
             } else {
-                // If file doesn't exist, use defaults and create the file
                 $this->config = $this->defaults;
                 $this->save($this->defaults);
             }
         } catch (\Exception $e) {
-            // Log the error
             error_log('POSSE Plugin: Error loading config: ' . $e->getMessage());
-            
-            // If loading fails, use defaults
             $this->config = $this->defaults;
         }
-        
+
+        $this->applyEnvOverrides();
+
         return $this->config;
     }
     
@@ -305,9 +312,31 @@ class Config
         return $this->option('services.' . $service, []);
     }
     
+    protected function applyEnvOverrides(): void
+    {
+        $map = [
+            'POSSE_NOSTR_PRIVATE_KEY'   => ['services', 'nostr', 'private_key'],
+            'POSSE_BLUESKY_API_TOKEN'   => ['services', 'bluesky', 'api_token'],
+            'POSSE_MASTODON_API_TOKEN'  => ['services', 'mastodon', 'api_token'],
+        ];
+
+        foreach ($map as $envVar => $path) {
+            $value = getenv($envVar);
+            if ($value === false || $value === '') {
+                continue;
+            }
+
+            $target = &$this->config;
+            foreach ($path as $key) {
+                $target = &$target[$key];
+            }
+            $target = $value;
+        }
+    }
+
     /**
      * Recursively merge configurations
-     * 
+     *
      * @param array $base Base configuration
      * @param array $override Override configuration
      * @return array Merged configuration

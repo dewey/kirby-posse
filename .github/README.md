@@ -1,12 +1,12 @@
 # POSSE Plugin for Kirby
 
-This plugin enables Publish (on your) Own Site, Syndicate Elsewhere (POSSE) functionality for your Kirby site. Automatically syndicate your posts to Mastodon and Bluesky (For now), or manually decide which ones you want to syndicate.
+This plugin enables Publish (on your) Own Site, Syndicate Elsewhere (POSSE) functionality for your Kirby site. Automatically syndicate your posts to Mastodon, Bluesky, and Nostr, or manually decide which ones you want to syndicate.
 
 ![Overview](./Overview.png)
 
 ## Features
 
-- Automatically syndicates your posts to Mastodon and Bluesky
+- Automatically syndicates your posts to Mastodon, Bluesky, and Nostr
 - Customizable post template with support for title, URL and tags
 - Queue system for managing which posts get syndicated when
 - Configurable delay before syndication (To fix typos, etc.)
@@ -62,6 +62,11 @@ services:
     enabled: true
     instance_url: https://bsky.social
     api_token: yourname.bsky.social:1234-4567-...
+    image_limit: 4
+  nostr:
+    enabled: true
+    private_key: nsec1...
+    relay_url: wss://relay.damus.io
     image_limit: 4
 ```
 

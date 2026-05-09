@@ -1,10 +1,10 @@
 # POSSE Plugin for Kirby
 
-This plugin enables Publish (on your) Own Site, Syndicate Elsewhere (POSSE) functionality for your Kirby site. Automatically syndicate your posts to Mastodon and Bluesky (For now), or manually decide which ones you want to syndicate.
+This plugin enables Publish (on your) Own Site, Syndicate Elsewhere (POSSE) functionality for your Kirby site. Automatically syndicate your posts to Mastodon, Bluesky, and Nostr, or manually decide which ones you want to syndicate.
 
 ## Features
 
-- Automatically syndicates your posts to Mastodon and Bluesky
+- Automatically syndicates your posts to Mastodon, Bluesky, and Nostr
 - Customizable post template with support for title, URL and tags
 - Queue system for managing which posts get syndicated
 - Configurable delay before syndication (To fix typos)
@@ -95,7 +95,31 @@ services:
     instance_url: "https://bsky.social"
     api_token: "your-bluesky-token"
     image_limit: 4
+  nostr:
+    enabled: true
+    private_key: "nsec1..."
+    relay_urls:
+      - wss://relay.damus.io
+      - wss://nostr.wine
+      - wss://relay.orangepill.dev
+    frontend_url: "https://primal.net/e/"  # Used to build a viewable link after posting
 ```
+
+## Services
+
+### Mastodon
+
+Create an API token at `https://<your-instance>/settings/applications`. The token needs `write:statuses` and `write:media` scopes. Set `instance_url` to your instance (e.g. `https://mastodon.social`) and `api_token` to the generated token.
+
+### Bluesky
+
+Use your Bluesky handle and an app password as the `api_token` in the format `handle.bsky.social:app-password`. App passwords can be created at Settings > Privacy and Security > App Passwords. Set `instance_url` to `https://bsky.social` unless you run your own PDS.
+
+### Nostr
+
+Generate a key pair with any Nostr client or key tool and set `private_key` to your `nsec` key. The plugin publishes kind-1 notes and attaches images as NIP-92 `imeta` tags. Images are always converted to JPEG before posting for broad client compatibility.
+
+`relay_urls` is a list of WebSocket relay URLs the event is broadcast to. `frontend_url` is used to construct a viewable link after posting (defaults to `https://primal.net/e/`).
 
 ## Database
 

@@ -14,7 +14,8 @@
     "require": {
         "getkirby/cms": "^5.0",
         "getkirby/composer-installer": "^1.1",
-        "cjrasmussen/bluesky-api": "^2.3"
+        "cjrasmussen/bluesky-api": "^2.3",
+        "swentel/nostr-php": "^1.9.2"
     },
     "extra": {
         "installer-name": "posse"
