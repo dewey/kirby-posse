@@ -153,12 +153,7 @@ class NostrService extends AbstractService implements ServiceInterface
                     $imageFile = $thumb->exists() ? $thumb->save() : $image;
                 }
 
-                // Get the URL of the processed image, normalizing to canonical URL if configured
                 $imageUrl = $imageFile->url();
-                $canonicalUrl = $this->config->option('canonical_url', '');
-                if (!empty($canonicalUrl)) {
-                    $imageUrl = str_replace(rtrim(site()->url(), '/'), rtrim($canonicalUrl, '/'), $imageUrl);
-                }
 
                 // Append image URL to content so clients render it inline
                 $event->setContent($event->getContent() . "\n\n" . $imageUrl);

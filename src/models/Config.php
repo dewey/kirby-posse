@@ -42,8 +42,7 @@ class Config
             ]
         ],
         'use_original_image_size' => false,
-        'image_preset' => '1800w',
-        'canonical_url' => ''
+        'image_preset' => '1800w'
     ];
     
     public function __construct()
