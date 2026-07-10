@@ -302,26 +302,40 @@ class Posse
             ];
         }
         
-        // Initialize the appropriate service and syndicate
+        // Initialize the appropriate service
         switch ($item->service) {
             case 'mastodon':
                 $service = new MastodonService($this->db, $this->config);
-                return $service->syndicate($item, $page, $content);
-                
+                break;
+
             case 'bluesky':
                 $service = new BlueskyService($this->db, $this->config);
-                return $service->syndicate($item, $page, $content);
-                
+                break;
+
             case 'nostr':
                 $service = new NostrService($this->db, $this->config);
-                return $service->syndicate($item, $page, $content);
-                
+                break;
+
             default:
                 return [
                     'status' => 'error',
                     'message' => 'Unknown service: ' . $item->service
                 ];
         }
+
+        $result = $service->syndicate($item, $page, $content);
+
+        // A service reporting success must leave the item marked syndicated. If it
+        // didn't, the item stays "ready" and the hourly cron reposts it every run.
+        if (($result['status'] ?? null) === 'success') {
+            $current = $this->db->getSyndication($id);
+            if ($current && empty($current->syndicated_at)) {
+                error_log('POSSE Plugin: Service ' . $item->service . ' reported success without marking item ' . $id . ' syndicated; marking now');
+                $this->markSyndicated($id, $result['syndicated_url'] ?? $page->url());
+            }
+        }
+
+        return $result;
     }
     
     /**
