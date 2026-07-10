@@ -250,6 +250,9 @@ class NostrService extends AbstractService implements ServiceInterface
                 // Create a viewable URL using Primal with hex event ID
                 $viewableUrl = $frontendUrl . $hexEventId;
 
+                // Mark as syndicated in the database
+                $this->markSyndicated($item, $viewableUrl, $page);
+
                 return [
                     'status' => 'success',
                     'message' => 'Successfully syndicated to Nostr',
