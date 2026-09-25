@@ -96,9 +96,6 @@ class MastodonService extends AbstractService
                 $statusId = $result['id'];
                 $syndicatedUrl = $instanceUrl . '/@' . $username . '/' . $statusId;
                 
-                // Mark as syndicated in the database
-                $this->markSyndicated($item, $syndicatedUrl, $page);
-                
                 return [
                     'status' => 'success',
                     'message' => 'Successfully syndicated to Mastodon',

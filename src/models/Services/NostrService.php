@@ -250,8 +250,6 @@ class NostrService extends AbstractService implements ServiceInterface
             $nevent = (new Nip19Helper())->encodeEvent($event, $acceptedRelays, $publicKey, 1);
             $viewableUrl = $frontendUrl . $nevent;
 
-            $this->markSyndicated($item, $viewableUrl, $page);
-
             return [
                 'status' => 'success',
                 'message' => 'Successfully syndicated to Nostr',

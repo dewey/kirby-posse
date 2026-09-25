@@ -48,6 +48,11 @@ class Database
             throw new Exception("Cannot write to database file: " . $this->dbPath);
         }
 
+        // SQLite writes its journal next to the file, so a read-only directory makes every write fail
+        if (!is_writable($dir)) {
+            throw new Exception("Cannot write to database directory: " . $dir);
+        }
+
         if (empty($this->dbPath)) {
             throw new Exception("Cannot determine valid database path.");
         }
@@ -58,6 +63,8 @@ class Database
                 'type'     => 'sqlite',
                 'database' => $this->dbPath,
             ]);
+            // Kirby returns false on failed queries by default. A lost write means the item gets posted again.
+            $this->db->fail(true);
 
             // Only initialize tables if this is a new database or if tables haven't been initialized yet
             if ($newDatabase || !self::$tablesInitialized) {
@@ -351,6 +358,31 @@ class Database
         }
     }
     
+    /**
+     * Take an item before posting it by setting syndicated_at.
+     * Returns false if it is already taken, so it is posted at most once.
+     */
+    public function claim(int $id): bool
+    {
+        $timestamp = gmdate('Y-m-d H:i:s');
+        $this->db->execute(
+            "UPDATE syndications SET syndicated_at = ?, updated_at = ? WHERE id = ? AND (syndicated_at IS NULL OR syndicated_at = '') AND ignored = 0",
+            [$timestamp, $timestamp, $id]
+        );
+        return $this->db->affected() === 1;
+    }
+
+    /**
+     * Give back a claimed item after a failed post so it is tried again
+     */
+    public function release(int $id): void
+    {
+        $this->db->execute(
+            'UPDATE syndications SET syndicated_at = NULL, updated_at = ? WHERE id = ?',
+            [gmdate('Y-m-d H:i:s'), $id]
+        );
+    }
+
     /**
      * Mark an item as ignored
      */
