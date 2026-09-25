@@ -7,10 +7,13 @@ use Notmyhostname\Posse\Models\Database;
 use Notmyhostname\Posse\Models\Config;
 use swentel\nostr\Key\Key;
 use swentel\nostr\Event\Event;
-use swentel\nostr\Relay\Relay;
-use swentel\nostr\Relay\RelaySet;
+use swentel\nostr\Nip19\Nip19Helper;
+use swentel\nostr\RelayResponse\RelayResponse;
+use swentel\nostr\RelayResponse\RelayResponseOk;
 use swentel\nostr\Sign\Sign;
 use swentel\nostr\Message\EventMessage;
+use WebSocket\Client;
+use WebSocket\Message\Text;
 
 class NostrService extends AbstractService implements ServiceInterface
 {
@@ -204,63 +207,56 @@ class NostrService extends AbstractService implements ServiceInterface
                 throw new \Exception('Failed to verify Nostr event');
             }
 
-            // Create the event message
-            $message = new EventMessage($event);
-
-            // Create individual relay instances
-            $relays = [];
-            foreach ($relayUrls as $relayUrl) {
-                $relays[] = new Relay($relayUrl);
-            }
-
-            // Create relay set and add all relays
-            $relaySet = new RelaySet();
-            $relaySet->setRelays($relays);
-            $relaySet->setMessage($message);
-
-            // Add detailed logging for connection process
+            // RelaySet::send() aborts on the first relay that throws and ignores the OK status, so publish to each relay on its own
+            $payload = (new EventMessage($event))->generate();
             error_log('POSSE Plugin: Attempting to connect to Nostr relays: ' . implode(', ', $relayUrls));
             $startTime = microtime(true);
 
-            // Send the event to all relays
-            $result = $relaySet->send();
-            
-            $endTime = microtime(true);
-            $duration = round($endTime - $startTime, 2);
+            $acceptedRelays = [];
+            foreach ($relayUrls as $relayUrl) {
+                try {
+                    $ok = $this->publishToRelay($relayUrl, $payload, $event->getId());
+                } catch (\Throwable $e) {
+                    error_log('POSSE Plugin: Nostr relay ' . $relayUrl . ' failed: ' . $e->getMessage());
+                    continue;
+                }
+                if (!$ok->status) {
+                    error_log('POSSE Plugin: Nostr relay ' . $relayUrl . ' rejected event: ' . $ok->message);
+                    continue;
+                }
+                $acceptedRelays[] = $relayUrl;
+            }
+
+            $duration = round(microtime(true) - $startTime, 2);
             error_log('POSSE Plugin: Relay connection attempts completed in ' . $duration . ' seconds');
 
-            // Check if we got a successful response, even if there were warnings
-            if ($result !== false && $result !== null) {
-                error_log('POSSE Plugin: Successfully sent event to Nostr relays');
-
-                // Debug: Print the full note for debugging
-                $debugNote = [
-                    'content' => $event->getContent(),
-                    'kind' => $event->getKind(),
-                    'tags' => $event->getTags(),
-                    'created_at' => $event->getCreatedAt(),
-                    'pubkey' => $event->getPublicKey(),
-                    'id' => $event->getId()
-                ];
-                error_log('POSSE Plugin: Full Nostr note sent: ' . json_encode($debugNote, JSON_PRETTY_PRINT));
-
-                // Get the hex event ID and create a viewable URL
-                $hexEventId = $event->getId();
-                
-                // Create a viewable URL using Primal with hex event ID
-                $viewableUrl = $frontendUrl . $hexEventId;
-
-                // Mark as syndicated in the database
-                $this->markSyndicated($item, $viewableUrl, $page);
-
-                return [
-                    'status' => 'success',
-                    'message' => 'Successfully syndicated to Nostr',
-                    'syndicated_url' => $viewableUrl
-                ];
-            } else {
-                throw new \Exception('Failed to send event to Nostr relays');
+            if (empty($acceptedRelays)) {
+                throw new \Exception('No Nostr relay accepted the event');
             }
+
+            error_log('POSSE Plugin: Nostr event accepted by: ' . implode(', ', $acceptedRelays));
+
+            $debugNote = [
+                'content' => $event->getContent(),
+                'kind' => $event->getKind(),
+                'tags' => $event->getTags(),
+                'created_at' => $event->getCreatedAt(),
+                'pubkey' => $event->getPublicKey(),
+                'id' => $event->getId()
+            ];
+            error_log('POSSE Plugin: Full Nostr note sent: ' . json_encode($debugNote, JSON_PRETTY_PRINT));
+
+            // Relay hints let clients find the note on relays that actually stored it
+            $nevent = (new Nip19Helper())->encodeEvent($event, $acceptedRelays, $publicKey, 1);
+            $viewableUrl = $frontendUrl . $nevent;
+
+            $this->markSyndicated($item, $viewableUrl, $page);
+
+            return [
+                'status' => 'success',
+                'message' => 'Successfully syndicated to Nostr',
+                'syndicated_url' => $viewableUrl
+            ];
 
         } catch (\Exception $e) {
             error_log('POSSE Plugin: Nostr syndication error: ' . $e->getMessage());
@@ -268,6 +264,32 @@ class NostrService extends AbstractService implements ServiceInterface
                 'status' => 'error',
                 'message' => $e->getMessage()
             ];
+        }
+    }
+    
+    /**
+     * Send the event to one relay and wait for its OK response
+     */
+    private function publishToRelay(string $url, string $payload, string $eventId): RelayResponseOk
+    {
+        $client = new Client($url);
+        $client->setTimeout(10);
+        try {
+            $client->text($payload);
+            // Relays may send NOTICE, AUTH or pings before the OK
+            for ($i = 0; $i < 10; $i++) {
+                $message = $client->receive();
+                if (!$message instanceof Text) {
+                    continue;
+                }
+                $response = RelayResponse::create(json_decode($message->getContent()));
+                if ($response instanceof RelayResponseOk && $response->eventId === $eventId) {
+                    return $response;
+                }
+            }
+            throw new \Exception('no OK response received');
+        } finally {
+            $client->disconnect();
         }
     }
     

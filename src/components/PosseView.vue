@@ -606,8 +606,8 @@ export default defineComponent({
         // No notification needed here - the calling function will handle it
         this.fetchQueue();
 
-        // Close the dialog
-        this.$refs.urlDialog.close();
+        // syndicateNow() also calls this, and then the dialog was never opened
+        this.$refs.urlDialog?.close();
         return true;
       } catch (error) {
         console.error("Error marking as syndicated:", error);
@@ -714,7 +714,8 @@ export default defineComponent({
 
         const data = await response.json();
 
-        if (!response.ok) {
+        // The API returns HTTP 200 with status "error" when a service fails
+        if (!response.ok || data.status === 'error') {
           throw new Error(data.message || 'Failed to syndicate now');
         }
 
