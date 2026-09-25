@@ -133,8 +133,6 @@ class BlueskyService extends AbstractService
                 $recordId = basename($atUri);
                 $syndicatedUrl = "https://bsky.app/profile/{$did}/post/{$recordId}";
                 
-                $this->markSyndicated($item, $syndicatedUrl, $page);
-                
                 return [
                     'status' => 'success',
                     'message' => 'Successfully syndicated to Bluesky',

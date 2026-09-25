@@ -323,17 +323,23 @@ class Posse
                 ];
         }
 
+        // Claim before posting. If the database can't be written, this throws and nothing is posted.
+        if (!$this->db->claim($id)) {
+            return [
+                'status' => 'error',
+                'message' => 'Item is already being syndicated or was syndicated'
+            ];
+        }
+
         $result = $service->syndicate($item, $page, $content);
 
-        // A service reporting success must leave the item marked syndicated. If it
-        // didn't, the item stays "ready" and the hourly cron reposts it every run.
-        if (($result['status'] ?? null) === 'success') {
-            $current = $this->db->getSyndication($id);
-            if ($current && empty($current->syndicated_at)) {
-                error_log('POSSE Plugin: Service ' . $item->service . ' reported success without marking item ' . $id . ' syndicated; marking now');
-                $this->markSyndicated($id, $result['syndicated_url'] ?? $page->url());
-            }
+        if (($result['status'] ?? null) !== 'success') {
+            $this->db->release($id);
+            return $result;
         }
+
+        // If this fails the item stays claimed. A missing URL is better than a duplicate post.
+        $this->markSyndicated($id, $result['syndicated_url']);
 
         return $result;
     }
